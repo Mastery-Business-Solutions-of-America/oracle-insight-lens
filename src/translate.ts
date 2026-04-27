@@ -199,7 +199,7 @@ function translateCreateTable(stmt: string, report: Report): string {
     }
 
     // Column definition: <name> <type> [modifiers...]
-    const colMatch = part.match(/^("?[\w]+"?)\s+([\s\S]+)$/);
+    const colMatch = part.match(/^("[^"]+"|[\w]+)\s+([\s\S]+)$/);
     if (!colMatch) {
       translatedParts.push("  " + part);
       continue;
