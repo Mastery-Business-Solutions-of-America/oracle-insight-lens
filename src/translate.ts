@@ -138,7 +138,7 @@ function splitStatements(sql: string): string[] {
 function translateCreateTable(stmt: string, report: Report): string {
   // Strip leading whitespace + SQL comments to find the CREATE clause,
   // but preserve them in the output by capturing the prefix.
-  const prefixRe = /^((?:\s*(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s))*)/;
+  const prefixRe = /^(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s+)*/;
   const prefixMatch = stmt.match(prefixRe);
   const prefix = prefixMatch ? prefixMatch[0] : "";
   const rest = stmt.slice(prefix.length);
