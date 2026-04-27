@@ -81,8 +81,8 @@ describe("translate — core behavior", () => {
     expect(oracle).toContain("VARCHAR2");
     expect(oracle).toContain("CLOB");
     expect(oracle).toContain("RAW(16)"); // posts.uuid
-    expect(oracle).toContain("IDENTITY"); // none in ghost actually — it uses varchar(24) — fine, may not match
-    // Should produce warnings: jsonb, uuid default, varchar(2000) is fine, unconstrained varchar — none here
+    // Ghost uses varchar(24) IDs (object IDs), not serial — no IDENTITY expected.
+    // Should produce warnings: jsonb (sessions.session_data), uuid default (posts.uuid)
     expect(report.count()).toBeGreaterThan(0);
   });
 });
