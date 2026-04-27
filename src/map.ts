@@ -58,7 +58,7 @@ export const TYPE_MAPPINGS: readonly TypeMapping[] = [
   { pg: "timestamptz", oracle: "TIMESTAMP WITH TIME ZONE" },
   { pg: "timestamp with time zone", oracle: "TIMESTAMP WITH TIME ZONE" },
   { pg: "date", oracle: "DATE" },
-  { pg: "time", oracle: "TIMESTAMP", warn: "time → TIMESTAMP: Oracle has no TIME-only type; date component will be 1970-01-01 unless rewritten.", severity: "warn" },
+  { pg: "time", oracle: "TIMESTAMP", warn: "time → TIMESTAMP: Oracle has no TIME-only type; the column will carry a date component (whatever the inserter supplies). Choose a sentinel date or redesign as VARCHAR2/INTERVAL.", severity: "warn" },
 
   // Binary / UUID
   { pg: "uuid", oracle: "RAW(16)", warn: "uuid → RAW(16): application must convert UUID strings to 16-byte binary on insert.", severity: "warn" },

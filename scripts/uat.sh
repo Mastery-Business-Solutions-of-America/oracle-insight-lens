@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pg2oracle UAT — 12 acceptance criteria.
+# pg2oracle UAT — 21 acceptance criteria.
 # Runs against the built binary (dist/cli.cjs). Exits 0 if all pass.
 set -u
 CLI="node dist/cli.cjs"
@@ -31,7 +31,7 @@ assert_not_contains() {
   if grep -qF -- "$needle" "$file"; then echo "    should not contain: $needle"; return 1; fi
 }
 
-echo "pg2oracle UAT — 12 criteria"
+echo "pg2oracle UAT — 21 criteria"
 echo "------------------------"
 
 # 1. --help works without input
@@ -211,6 +211,16 @@ SQL
 check "21. numeric(>38) flagged out-of-range" bash -c "
   $CLI '$TMP/np.sql' -o '$TMP/np.ora.sql' --report '$TMP/np.md' &&
   grep -q 'precision out of range' '$TMP/np.md'
+"
+
+# 22. CREATE TABLE IF NOT EXISTS stripped + warned
+cat > "$TMP/ine.sql" <<'SQL'
+CREATE TABLE IF NOT EXISTS users (id serial PRIMARY KEY);
+SQL
+check "22. CREATE TABLE IF NOT EXISTS stripped + warned" bash -c "
+  $CLI '$TMP/ine.sql' -o '$TMP/ine.ora.sql' --report '$TMP/ine.md' &&
+  ! grep -qi 'IF NOT EXISTS' '$TMP/ine.ora.sql' &&
+  grep -q 'IF NOT EXISTS' '$TMP/ine.md'
 "
 
 echo "------------------------"

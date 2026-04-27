@@ -3,12 +3,20 @@ import { Command } from "commander";
 import { readFileSync, writeFileSync } from "node:fs";
 import { translate } from "./translate.js";
 
+// Version is injected at build time from package.json via esbuild's --define
+// (see the "build" script in package.json). This guarantees --version stays
+// in sync with the published manifest without a runtime fs lookup, which
+// breaks once the bundle is installed outside the repo.
+declare const __PG2ORACLE_VERSION__: string;
+const VERSION =
+  typeof __PG2ORACLE_VERSION__ !== "undefined" ? __PG2ORACLE_VERSION__ : "0.0.0-dev";
+
 const program = new Command();
 
 program
   .name("pg2oracle")
   .description("Translate PostgreSQL DDL to Oracle DDL. File in, file out.\nWarns about lossy mappings and footguns; never renames your objects.")
-  .version("0.1.0")
+  .version(VERSION)
   .argument("[input]", "Input SQL file (omit or use '-' to read stdin)")
   .option("-o, --output <file>", "Write Oracle DDL to file (default: stdout)")
   .option("--report <file>", "Write compatibility report (markdown)")

@@ -167,6 +167,20 @@ function translateCreateTable(stmt: string, report: Report): string {
   const body = rest.slice(bodyStart, bodyEnd);
   const tail = rest.slice(bodyEnd + 1).replace(/;?\s*$/, "").trim();
 
+  // Strip Postgres-only `IF NOT EXISTS` — Oracle rejects it on CREATE TABLE.
+  // We strip rather than warn-and-leave because the resulting DDL would not
+  // compile at all (this is a syntax error on Oracle, not a semantic difference).
+  let cleanedHead = head;
+  if (/IF\s+NOT\s+EXISTS/i.test(head)) {
+    cleanedHead = head.replace(/\s*IF\s+NOT\s+EXISTS\s+/i, " ");
+    report.add({
+      severity: "warn",
+      category: "DDL feature",
+      message: `\`IF NOT EXISTS\` on CREATE TABLE is Postgres-only. Removed from output — Oracle will error if the table already exists. Wrap in PL/SQL (\`BEGIN EXECUTE IMMEDIATE ...; EXCEPTION WHEN OTHERS THEN NULL; END;\`) if idempotent DDL is required.`,
+      location: `table ${rawName.replace(/"/g, "")}`,
+    });
+  }
+
   const tableName = rawName.replace(/"/g, "");
   if (tableName.includes(".")) {
     report.add({
@@ -237,7 +251,7 @@ function translateCreateTable(stmt: string, report: Report): string {
     translatedParts.push("  " + translateColumnDef(colNameRaw, rest, bareName, report));
   }
 
-  return `${prefix}${head}${rawName} (\n${translatedParts.join(",\n")}\n);`;
+  return `${prefix}${cleanedHead}${rawName} (\n${translatedParts.join(",\n")}\n);`;
 }
 
 function splitTopLevelCommas(s: string): string[] {
