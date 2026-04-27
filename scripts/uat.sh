@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pg2oracle UAT — 12 acceptance criteria.
+# pg2oracle UAT — 21 acceptance criteria.
 # Runs against the built binary (dist/cli.cjs). Exits 0 if all pass.
 set -u
 CLI="node dist/cli.cjs"
