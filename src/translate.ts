@@ -232,14 +232,43 @@ function splitTopLevelCommas(s: string): string[] {
 }
 
 function translateColumnDef(colNameRaw: string, rest: string, tableName: string, report: Report): string {
-  // Tokenize: type may include parens, then modifiers
-  // Extract type: greedily match an identifier optionally followed by ( ... )
-  const typeMatch = rest.match(/^([A-Za-z][A-Za-z\s]*?(?:\s*\([^)]*\))?)\s*(.*)$/);
-  if (!typeMatch) return `${colNameRaw} ${rest}`;
-  const [, pgTypeRaw, modifiersRaw] = typeMatch;
-  if (!pgTypeRaw) return `${colNameRaw} ${rest}`;
-  const pgType = pgTypeRaw.trim();
-  const modifiers = (modifiersRaw ?? "").trim();
+  // Tokenize the type name. A Postgres type name is one of:
+  //   - a single word: integer, text, jsonb, varchar
+  //   - a multi-word base: "double precision", "character varying", "timestamp without time zone", "timestamp with time zone"
+  //   - optionally followed by parameters: varchar(255), numeric(10,2), timestamptz(3)
+  // We try multi-word forms first (longest match), then a single-word fallback.
+  const multiWord = [
+    "timestamp without time zone",
+    "timestamp with time zone",
+    "character varying",
+    "double precision",
+  ];
+  let pgType = "";
+  let modifiers = "";
+  const restLower = rest.toLowerCase();
+  for (const mw of multiWord) {
+    if (restLower.startsWith(mw)) {
+      // capture optional (params)
+      const after = rest.slice(mw.length);
+      const paren = after.match(/^\s*\(([^)]*)\)/);
+      if (paren) {
+        pgType = `${rest.slice(0, mw.length)}(${paren[1]})`;
+        modifiers = after.slice(paren[0].length).trim();
+      } else {
+        pgType = rest.slice(0, mw.length);
+        modifiers = after.trim();
+      }
+      break;
+    }
+  }
+  if (!pgType) {
+    const single = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)(\s*\([^)]*\))?\s*(.*)$/s);
+    if (!single) return `${colNameRaw} ${rest}`;
+    const [, base, paren, mods] = single;
+    if (!base) return `${colNameRaw} ${rest}`;
+    pgType = `${base}${paren ?? ""}`;
+    modifiers = (mods ?? "").trim();
+  }
 
   const colName = colNameRaw.replace(/"/g, "");
   const mapped: MapResult | null = mapType(pgType, colName);
