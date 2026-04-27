@@ -1,5 +1,7 @@
 # pg2oracle
 
+> **This is an independent open-source project. It is not an Oracle product and is not affiliated with, endorsed by, or sponsored by Oracle Corporation.**
+
 > Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.
 
 `pg2oracle` is a single-binary CLI that converts a Postgres schema dump into
