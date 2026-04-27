@@ -1,7 +1,7 @@
 # pg2ora compatibility report
 
 Source: `examples/ghost/postgres.sql`
-Generated: 2026-04-27T06:46:43.980Z
+Generated: 2026-04-27T06:47:15.941Z
 
 ## Summary
 
