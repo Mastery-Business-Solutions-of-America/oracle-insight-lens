@@ -65,8 +65,12 @@ export const TYPE_MAPPINGS: readonly TypeMapping[] = [
   { pg: "bytea", oracle: "BLOB" },
 
   // Structured
-  { pg: "json", oracle: "CLOB CHECK (\"__COL__\" IS JSON)", warn: "json → CLOB with IS JSON check. Native Oracle JSON type only available 21c+; this works on 12c+.", severity: "warn" },
-  { pg: "jsonb", oracle: "CLOB CHECK (\"__COL__\" IS JSON)", warn: "jsonb → CLOB with IS JSON check. jsonb's binary storage and indexing semantics do NOT translate; queries using jsonb operators (@>, ->) must be rewritten.", severity: "high" },
+  // __COLREF__ is replaced with a syntactically-valid Oracle reference to the
+  // column being checked: quoted name verbatim if the source was quoted,
+  // otherwise the unquoted Oracle-uppercase identifier (matches what Oracle
+  // creates for unquoted column names).
+  { pg: "json", oracle: "CLOB CHECK (__COLREF__ IS JSON)", warn: "json → CLOB with IS JSON check. Native Oracle JSON type only available 21c+; this works on 12c+.", severity: "warn" },
+  { pg: "jsonb", oracle: "CLOB CHECK (__COLREF__ IS JSON)", warn: "jsonb → CLOB with IS JSON check. jsonb's binary storage and indexing semantics do NOT translate; queries using jsonb operators (@>, ->) must be rewritten.", severity: "high" },
 ];
 
 /**
@@ -95,7 +99,7 @@ export interface MapResult {
   severity?: Severity;
 }
 
-export function mapType(pgType: string, columnName?: string): MapResult | null {
+export function mapType(pgType: string, colNameRaw?: string): MapResult | null {
   const trimmed = pgType.trim();
   const m = findMapping(trimmed);
   if (!m) return null;
@@ -126,9 +130,14 @@ export function mapType(pgType: string, columnName?: string): MapResult | null {
     }
   }
 
-  // Substitute __COL__ placeholder for IS JSON checks
-  if (columnName && oracle.includes("__COL__")) {
-    oracle = oracle.replace(/__COL__/g, columnName);
+  // Substitute __COLREF__ placeholder for IS JSON checks.
+  // colNameRaw may be quoted ("foo") or bare (foo) — preserve the form so
+  // Oracle resolves the same identifier the column is created with.
+  if (colNameRaw && oracle.includes("__COLREF__")) {
+    const ref = /^"[^"]+"$/.test(colNameRaw)
+      ? colNameRaw // already quoted, case-sensitive identifier
+      : colNameRaw.toUpperCase(); // bare → Oracle uppercases at create time
+    oracle = oracle.replace(/__COLREF__/g, ref);
   }
 
   return { oracle, warn, severity };

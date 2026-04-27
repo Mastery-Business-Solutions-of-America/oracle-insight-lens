@@ -143,13 +143,29 @@ function translateCreateTable(stmt: string, report: Report): string {
   const prefix = prefixMatch ? prefixMatch[0] : "";
   const rest = stmt.slice(prefix.length);
 
-  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( <body> ) [WITH (...)] ;
-  const headerRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(([\s\S]*)\)\s*([^;]*);?\s*$/i;
-  const m = rest.match(headerRe);
-  if (!m) return stmt; // can't parse, leave alone — caller logs nothing
-
-  const [, head, rawName, body] = m;
-  if (!head || !rawName || body === undefined) return stmt;
+  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( ... )
+  // We can't use a single regex for the body because it must respect nested
+  // parens (e.g. numeric(10,2), CHECK (x IN (1,2))). Match the head + name +
+  // opening paren, then walk the string to find the matching close paren.
+  const headRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(/i;
+  const hm = rest.match(headRe);
+  if (!hm) return stmt;
+  const [, head, rawName] = hm;
+  if (!head || !rawName) return stmt;
+  const bodyStart = hm[0].length;
+  let depth = 1;
+  let bodyEnd = -1;
+  for (let i = bodyStart; i < rest.length; i++) {
+    const ch = rest[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") {
+      depth--;
+      if (depth === 0) { bodyEnd = i; break; }
+    }
+  }
+  if (bodyEnd < 0) return stmt;
+  const body = rest.slice(bodyStart, bodyEnd);
+  const tail = rest.slice(bodyEnd + 1).replace(/;?\s*$/, "").trim();
 
   const tableName = rawName.replace(/"/g, "");
   if (tableName.includes(".")) {
@@ -170,6 +186,19 @@ function translateCreateTable(stmt: string, report: Report): string {
     });
   }
 
+  // Trailing CREATE TABLE clauses (TABLESPACE, PARTITION BY, INHERITS, WITH (...))
+  // are Postgres-specific or syntactically incompatible with Oracle's placement.
+  // Per warn-never-rewrite: drop them from output and emit a high-severity warning
+  // identifying exactly what was dropped.
+  if (tail.length > 0) {
+    report.add({
+      severity: "high",
+      category: "table option dropped",
+      message: `CREATE TABLE \`${bareName}\` had trailing clause \`${tail.replace(/\s+/g, " ").slice(0, 120)}\` after the column list. Postgres clauses such as INHERITS, PARTITION BY, TABLESPACE, and WITH (...) do not translate to Oracle; clause dropped from output — rewrite manually if needed.`,
+      location: `table ${bareName}`,
+    });
+  }
+
   // Split body by top-level commas (respect parens)
   const parts = splitTopLevelCommas(body);
   const translatedParts: string[] = [];
@@ -178,14 +207,14 @@ function translateCreateTable(stmt: string, report: Report): string {
     const part = raw.trim();
     if (part.length === 0) continue;
 
-    // Constraint clauses: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, CONSTRAINT
+    // Constraint clauses: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, CONSTRAINT, EXCLUDE
     if (/^(CONSTRAINT|PRIMARY\s+KEY|FOREIGN\s+KEY|UNIQUE|CHECK|EXCLUDE)\b/i.test(part)) {
-      translatedParts.push("  " + translateConstraint(part, report));
+      translatedParts.push("  " + translateConstraint(part, bareName, report));
       continue;
     }
 
     // Column definition: <name> <type> [modifiers...]
-    const colMatch = part.match(/^("?[\w]+"?)\s+([\s\S]+)$/);
+    const colMatch = part.match(/^("[^"]+"|[\w]+)\s+([\s\S]+)$/);
     if (!colMatch) {
       translatedParts.push("  " + part);
       continue;
@@ -216,14 +245,29 @@ function splitTopLevelCommas(s: string): string[] {
   let depth = 0;
   let buf = "";
   let inSingle = false;
+  let inLineComment = false;
+  let inBlockComment = false;
   for (let i = 0; i < s.length; i++) {
     const c = s[i]!;
+    const next = i + 1 < s.length ? s[i + 1] : "";
+    if (inLineComment) {
+      buf += c;
+      if (c === "\n") inLineComment = false;
+      continue;
+    }
+    if (inBlockComment) {
+      buf += c;
+      if (c === "*" && next === "/") { buf += next; i++; inBlockComment = false; }
+      continue;
+    }
     if (inSingle) {
       buf += c;
       if (c === "'" && s[i + 1] !== "'") inSingle = false;
       else if (c === "'" && s[i + 1] === "'") { buf += s[++i]; }
       continue;
     }
+    if (c === "-" && next === "-") { buf += c; inLineComment = true; continue; }
+    if (c === "/" && next === "*") { buf += c + next; i++; inBlockComment = true; continue; }
     if (c === "'") { inSingle = true; buf += c; continue; }
     if (c === "(") depth++;
     if (c === ")") depth--;
@@ -269,6 +313,21 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
     }
   }
   if (!pgType) {
+    // Detect array types FIRST so we can warn instead of silently emitting
+    // garbage like `CLOB []`. Postgres `text[]` has no Oracle equivalent.
+    const arr = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)(\s*\([^)]*\))?\s*((?:\[\s*\]\s*)+)(.*)$/s);
+    if (arr) {
+      const [, base, paren, brackets, mods] = arr;
+      const arrType = `${base}${paren ?? ""}${(brackets ?? "").replace(/\s+/g, "")}`;
+      report.add({
+        severity: "high",
+        category: "array type",
+        message: `Postgres array type \`${arrType}\` has no direct Oracle equivalent. Output left unchanged — model as a child table, a VARRAY/Nested Table type, or store as JSON CLOB before migrating.`,
+        location: `table ${tableName}, column ${colNameRaw.replace(/"/g, "")}`,
+      });
+      const tail = (mods ?? "").trim();
+      return `${colNameRaw} ${arrType}${tail ? " " + tail : ""}`.trim();
+    }
     const single = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)(\s*\([^)]*\))?\s*(.*)$/s);
     if (!single) return `${colNameRaw} ${rest}`;
     const [, base, paren, mods] = single;
@@ -278,7 +337,10 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
   }
 
   const colName = colNameRaw.replace(/"/g, "");
-  const mapped: MapResult | null = mapType(pgType, colName);
+  // Pass the RAW column token (preserving quotes) so __COL__ substitution
+  // emits a syntactically valid Oracle identifier even for special-char
+  // or case-sensitive names like "user-data".
+  const mapped: MapResult | null = mapType(pgType, colNameRaw);
 
   let oracleType: string;
   if (mapped) {
@@ -291,6 +353,8 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
         location: `table ${tableName}, column ${colName}`,
       });
     }
+    // Length validation against Oracle limits (warn-never-rewrite policy).
+    validateOracleLengths(pgType, oracleType, tableName, colName, report);
   } else {
     report.add({
       severity: "high",
@@ -347,16 +411,60 @@ function translateColumnModifiers(mods: string, tableName: string, colName: stri
   return out.trim();
 }
 
-function translateConstraint(part: string, report: Report): string {
+/**
+ * Validate that Oracle-side length/precision parameters fit Oracle's hard limits.
+ * varchar2: 4000 bytes by default (32767 only with MAX_STRING_SIZE=EXTENDED).
+ * NUMBER precision: max 38.
+ * We never clamp; we warn so the user keeps the source-of-truth choice.
+ */
+function validateOracleLengths(pgType: string, oracleType: string, tableName: string, colName: string, report: Report): void {
+  const vc = oracleType.match(/^VARCHAR2\((\d+)(?:\s+(?:BYTE|CHAR))?\)$/i);
+  if (vc) {
+    const n = Number(vc[1]);
+    if (n > 4000) {
+      report.add({
+        severity: "high",
+        category: "length out of range",
+        message: `\`${pgType}\` → \`${oracleType}\` exceeds Oracle's default 4000-byte VARCHAR2 limit. Requires MAX_STRING_SIZE=EXTENDED (12.1+, irreversible) or migrate to CLOB.`,
+        location: `table ${tableName}, column ${colName}`,
+      });
+    }
+  }
+  const num = oracleType.match(/^NUMBER\((\d+)(?:\s*,\s*(-?\d+))?\)$/i);
+  if (num) {
+    const p = Number(num[1]);
+    if (p > 38) {
+      report.add({
+        severity: "high",
+        category: "precision out of range",
+        message: `\`${pgType}\` → \`${oracleType}\` exceeds Oracle's NUMBER precision limit of 38. Output left unchanged — Oracle will reject it.`,
+        location: `table ${tableName}, column ${colName}`,
+      });
+    }
+  }
+}
+
+function translateConstraint(part: string, tableName: string, report: Report): string {
   // Most table constraints translate verbatim. Watch for:
   //  - DEFERRABLE INITIALLY DEFERRED on UNIQUE — Oracle supports it
   //  - INCLUDE (...) on PRIMARY KEY — Postgres-only, drop with warning
+  //  - EXCLUDE — Postgres-only, no Oracle equivalent
   let out = part;
+  if (/^\s*(?:CONSTRAINT\s+\S+\s+)?EXCLUDE\b/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "EXCLUDE constraint",
+      message: `EXCLUDE constraint has no Oracle equivalent. Output left unchanged — Oracle will reject it. Consider an application-level check or a row-level trigger.`,
+      location: `table ${tableName}`,
+    });
+    return out;
+  }
   if (/INCLUDE\s*\(/i.test(out)) {
     report.add({
       severity: "warn",
       category: "constraint feature dropped",
       message: `INCLUDE clause on constraint is Postgres-only. Removed from output.`,
+      location: `table ${tableName}`,
     });
     out = out.replace(/\s+INCLUDE\s*\([^)]*\)/gi, "");
   }
@@ -364,7 +472,7 @@ function translateConstraint(part: string, report: Report): string {
 }
 
 function translateCreateIndex(stmt: string, report: Report): string {
-  // CREATE [UNIQUE] INDEX [IF NOT EXISTS] <name> ON <table> [USING <method>] (cols);
+  // CREATE [UNIQUE] INDEX [IF NOT EXISTS] <name> ON <table> [USING <method>] (cols) [INCLUDE (...)] [WHERE ...];
   let out = stmt;
   // USING btree/hash/gin/gist — Oracle has its own index types, drop USING for btree (default)
   out = out.replace(/\s+USING\s+btree\b/gi, "");
@@ -385,6 +493,23 @@ function translateCreateIndex(stmt: string, report: Report): string {
       message: `\`IF NOT EXISTS\` on CREATE INDEX is not portable. Removed; Oracle will error if the index already exists.`,
     });
     out = out.replace(/\s+IF\s+NOT\s+EXISTS/gi, "");
+  }
+  // INCLUDE (...) — Postgres-only on CREATE INDEX (covering indexes)
+  if (/\bINCLUDE\s*\(/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "index feature dropped",
+      message: `\`INCLUDE (...)\` covering-index clause is Postgres-only. Removed from output — for similar effect on Oracle, add the columns to the index key list.`,
+    });
+    out = out.replace(/\s+INCLUDE\s*\([^)]*\)/gi, "");
+  }
+  // Partial-index WHERE — Oracle supports function-based indexes but not WHERE on plain indexes
+  if (/\)\s*WHERE\s+/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "partial index",
+      message: `Partial index \`WHERE\` clause is Postgres-only. Output left unchanged — Oracle will reject it. Rewrite as a function-based index or materialized view.`,
+    });
   }
   return out;
 }
@@ -452,10 +577,25 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       continue;
     }
     if (/^ALTER\s+TABLE\b/i.test(classifier)) {
-      // Many ALTER TABLE clauses translate cleanly; a few don't
-      let altered = stmt;
-      altered = altered.replace(/\bSET\s+DATA\s+TYPE\b/gi, "MODIFY");
-      out.push(altered);
+      // ALTER TABLE rewrites are dangerous: PG and Oracle differ in clause
+      // ordering, parens placement, and feature set. Rather than do a broad
+      // string substitution (which would corrupt comments, multi-clause
+      // statements, and USING clauses), we pass the statement through
+      // unchanged and emit a high-severity warning per warn-never-rewrite.
+      const c = classifier.toLowerCase();
+      const looksRisky =
+        /\bset\s+data\s+type\b/.test(c) ||
+        /\busing\b/.test(c) ||
+        /\balter\s+column\b/.test(c) ||
+        /\bdrop\s+constraint\b.*\bif\s+exists\b/.test(c);
+      if (looksRisky) {
+        report.add({
+          severity: "high",
+          category: "ALTER TABLE not translated",
+          message: `ALTER TABLE statement uses Postgres syntax that does not translate cleanly to Oracle (e.g. \`SET DATA TYPE\`, \`USING\`, or \`ALTER COLUMN\`). Statement preserved verbatim — rewrite as Oracle \`ALTER TABLE ... MODIFY (...)\` by hand.`,
+        });
+      }
+      out.push(stmt);
       continue;
     }
 
