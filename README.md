@@ -33,7 +33,10 @@ pg2oracle schema.sql -o oracle.sql
 # With a compatibility report
 pg2oracle schema.sql -o oracle.sql --report compat.md
 
-# Pipe from pg_dump
+# Try without installing
+pg_dump --schema-only mydb | npx pg2oracle@latest > oracle.sql
+
+# Pipe from pg_dump (after global install)
 pg_dump --schema-only mydb | pg2oracle > oracle.sql
 
 # CI mode: exit 2 on any warning
@@ -54,7 +57,7 @@ pg2oracle schema.sql --strict -o oracle.sql
 
 ## What it translates
 
-**16 type mappings**, hardcoded in [`src/map.ts`](src/map.ts):
+**~30 type mappings**, hardcoded in [`src/map.ts`](src/map.ts):
 
 | Postgres | Oracle | Notes |
 |---|---|---|
@@ -80,15 +83,19 @@ pg2oracle schema.sql --strict -o oracle.sql
 
 **Default expressions:**
 
-- `now()` / `CURRENT_TIMESTAMP` → `SYSTIMESTAMP`
+- `now()` → `SYSTIMESTAMP`
+- `CURRENT_TIMESTAMP` → left as-is (valid on Oracle)
 - `true` / `false` (on boolean columns) → `1` / `0`
 - `gen_random_uuid()` / `uuid_generate_v4()` → **dropped** with high-severity warning
 
 **Statements handled:**
 
-- `CREATE TABLE` — full type translation, constraint passthrough
+- `CREATE TABLE` — full type translation, constraint passthrough. `IF NOT EXISTS`
+  is stripped (Oracle rejects it) and a warning is emitted.
 - `CREATE INDEX` — `USING btree` stripped; other access methods warned and dropped
-- `ALTER TABLE` — `SET DATA TYPE` rewritten to `MODIFY`
+- `ALTER TABLE` — preserved verbatim with a high-severity warning when the
+  statement uses Postgres-only syntax (`SET DATA TYPE`, `USING`, `ALTER COLUMN`).
+  No automatic rewrite to Oracle's `MODIFY (...)` form — rewrite by hand.
 - `COMMENT ON` — passed through verbatim
 - `CREATE EXTENSION` — dropped with warning
 - `CREATE FUNCTION/PROCEDURE/TRIGGER` — preserved verbatim with high-severity warning (PL/pgSQL is **not** translated)
