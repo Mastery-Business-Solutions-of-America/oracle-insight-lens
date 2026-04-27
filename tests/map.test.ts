@@ -57,12 +57,19 @@ describe("type mappings", () => {
     expect(mapType("bytea")?.oracle).toBe("BLOB");
   });
 
-  it("maps jsonb → CLOB IS JSON with HIGH severity", () => {
+  it("maps jsonb → CLOB IS JSON with HIGH severity (uppercase ref for bare names)", () => {
     const r = mapType("jsonb", "data");
     expect(r?.oracle).toContain("CLOB");
     expect(r?.oracle).toContain("IS JSON");
-    expect(r?.oracle).toContain("data");
+    // Bare PG name 'data' becomes Oracle DATA (Oracle uppercases unquoted identifiers).
+    expect(r?.oracle).toContain("DATA IS JSON");
     expect(r?.severity).toBe("high");
+  });
+
+  it("maps jsonb with quoted column → preserves quoted identifier in CHECK", () => {
+    const r = mapType("jsonb", `"user-data"`);
+    // Hyphenated → must stay quoted in the CHECK or Oracle parses it as MINUS.
+    expect(r?.oracle).toContain(`"user-data" IS JSON`);
   });
 
   it("maps numeric with precision", () => {
