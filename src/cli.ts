@@ -1,14 +1,21 @@
 // Built bundle gets a shebang via esbuild's --banner flag (see package.json).
 import { Command } from "commander";
 import { readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { translate } from "./translate.js";
+
+// Read version from package.json so --version never drifts from the published manifest.
+// createRequire works in both ESM source (vitest) and the bundled CJS output (esbuild
+// inlines the package.json contents at build time when --bundle is on).
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 
 const program = new Command();
 
 program
   .name("pg2oracle")
   .description("Translate PostgreSQL DDL to Oracle DDL. File in, file out.\nWarns about lossy mappings and footguns; never renames your objects.")
-  .version("0.1.0")
+  .version(pkg.version)
   .argument("[input]", "Input SQL file (omit or use '-' to read stdin)")
   .option("-o, --output <file>", "Write Oracle DDL to file (default: stdout)")
   .option("--report <file>", "Write compatibility report (markdown)")

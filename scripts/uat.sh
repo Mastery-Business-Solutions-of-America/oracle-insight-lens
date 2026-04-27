@@ -31,7 +31,7 @@ assert_not_contains() {
   if grep -qF -- "$needle" "$file"; then echo "    should not contain: $needle"; return 1; fi
 }
 
-echo "pg2oracle UAT — 12 criteria"
+echo "pg2oracle UAT — 21 criteria"
 echo "------------------------"
 
 # 1. --help works without input
