@@ -4,11 +4,37 @@
   "description": "Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.",
   "license": "MIT",
   "author": "Sam <sam@getboltway.com>",
+  "homepage": "https://github.com/sambolt/pg2oracle#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sambolt/pg2oracle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sambolt/pg2oracle/issues"
+  },
+  "keywords": [
+    "postgres",
+    "postgresql",
+    "oracle",
+    "migration",
+    "ddl",
+    "schema",
+    "sql",
+    "translate",
+    "converter",
+    "pg_dump",
+    "database",
+    "cli"
+  ],
   "type": "module",
   "bin": {
     "pg2oracle": "./dist/cli.cjs"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -20,7 +46,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "uat": "bash scripts/uat.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "bun run typecheck && bun run test && bun run build && bun run uat",
+    "prepublishOnly": "bun run verify"
   },
   "dependencies": {},
   "devDependencies": {
