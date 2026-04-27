@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to `pg2oracle` will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] — 2026-04-27
+
+Initial public release.
+
+### Added
+
+- CLI: `pg2oracle <input> -o <output>` with stdin/stdout piping support
+- 16 hardcoded Postgres → Oracle type mappings (see README)
+- Default-expression rewriting: `now()`/`CURRENT_TIMESTAMP` → `SYSTIMESTAMP`,
+  boolean `true`/`false` → `1`/`0`, `gen_random_uuid()` dropped with warning
+- Statement handling: `CREATE TABLE`, `CREATE INDEX`, `ALTER TABLE`,
+  `COMMENT ON`, `CREATE EXTENSION` (dropped), `CREATE FUNCTION/PROCEDURE/TRIGGER`
+  (preserved verbatim with high-severity warning)
+- Markdown compatibility report (`--report <file>`) with three severity
+  levels: `high`, `warn`, `info`
+- `--strict` flag: exit code 2 on any warnings (CI-friendly)
+- Worked example: Ghost CMS schema (`examples/ghost/`)
+- 28 unit tests + 21-criterion UAT script
+- Single-file build (~134 KB, no runtime deps) targeting Node 22+
+
+[0.1.0]: https://github.com/sambolt/pg2oracle/releases/tag/v0.1.0
