@@ -298,6 +298,21 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
     }
   }
   if (!pgType) {
+    // Detect array types FIRST so we can warn instead of silently emitting
+    // garbage like `CLOB []`. Postgres `text[]` has no Oracle equivalent.
+    const arr = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)(\s*\([^)]*\))?\s*((?:\[\s*\]\s*)+)(.*)$/s);
+    if (arr) {
+      const [, base, paren, brackets, mods] = arr;
+      const arrType = `${base}${paren ?? ""}${(brackets ?? "").replace(/\s+/g, "")}`;
+      report.add({
+        severity: "high",
+        category: "array type",
+        message: `Postgres array type \`${arrType}\` has no direct Oracle equivalent. Output left unchanged — model as a child table, a VARRAY/Nested Table type, or store as JSON CLOB before migrating.`,
+        location: `table ${tableName}, column ${colNameRaw.replace(/"/g, "")}`,
+      });
+      const tail = (mods ?? "").trim();
+      return `${colNameRaw} ${arrType}${tail ? " " + tail : ""}`.trim();
+    }
     const single = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)(\s*\([^)]*\))?\s*(.*)$/s);
     if (!single) return `${colNameRaw} ${rest}`;
     const [, base, paren, mods] = single;
@@ -307,7 +322,10 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
   }
 
   const colName = colNameRaw.replace(/"/g, "");
-  const mapped: MapResult | null = mapType(pgType, colName);
+  // Pass the RAW column token (preserving quotes) so __COL__ substitution
+  // emits a syntactically valid Oracle identifier even for special-char
+  // or case-sensitive names like "user-data".
+  const mapped: MapResult | null = mapType(pgType, colNameRaw);
 
   let oracleType: string;
   if (mapped) {
@@ -320,6 +338,8 @@ function translateColumnDef(colNameRaw: string, rest: string, tableName: string,
         location: `table ${tableName}, column ${colName}`,
       });
     }
+    // Length validation against Oracle limits (warn-never-rewrite policy).
+    validateOracleLengths(pgType, oracleType, tableName, colName, report);
   } else {
     report.add({
       severity: "high",
