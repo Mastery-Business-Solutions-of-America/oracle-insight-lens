@@ -39,7 +39,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "esbuild src/cli.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/cli.cjs --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.cjs",
+    "build": "node -e \"const v=require('./package.json').version;require('child_process').execSync('esbuild src/cli.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/cli.cjs --banner:js=\\\\\"#!/usr/bin/env node\\\\\" --define:__PG2ORACLE_VERSION__=\\\\\"\\\\\\\\\\\"'+v+'\\\\\\\\\\\"\\\\\"',{stdio:'inherit'})\" && chmod +x dist/cli.cjs",
     "build:dev": "node scripts/dev-stub.mjs",
     "dev": "node scripts/dev-stub.mjs",
     "start": "node dist/cli.cjs",
