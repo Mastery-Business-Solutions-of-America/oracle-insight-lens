@@ -105,11 +105,16 @@ export function mapType(pgType: string, columnName?: string): MapResult | null {
   const baseLower = trimmed.replace(/\s*\([^)]*\)\s*$/, "").trim().toLowerCase();
 
   let oracle = m.oracle;
+  let warn = m.warn;
+  let severity = m.severity;
 
   if (parenMatch) {
     const params = parenMatch[1]!.trim();
     if (baseLower === "varchar" || baseLower === "character varying") {
       oracle = `VARCHAR2(${params})`;
+      // Length supplied → the "defaulted to VARCHAR2(4000)" warning no longer applies.
+      warn = undefined;
+      severity = undefined;
     } else if (baseLower === "char" || baseLower === "character") {
       oracle = `CHAR(${params})`;
     } else if (baseLower === "numeric" || baseLower === "decimal") {
@@ -126,9 +131,5 @@ export function mapType(pgType: string, columnName?: string): MapResult | null {
     oracle = oracle.replace(/__COL__/g, columnName);
   }
 
-  return {
-    oracle,
-    warn: m.warn,
-    severity: m.severity,
-  };
+  return { oracle, warn, severity };
 }
