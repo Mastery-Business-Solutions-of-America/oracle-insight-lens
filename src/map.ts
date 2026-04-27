@@ -65,8 +65,12 @@ export const TYPE_MAPPINGS: readonly TypeMapping[] = [
   { pg: "bytea", oracle: "BLOB" },
 
   // Structured
-  { pg: "json", oracle: "CLOB CHECK (\"__COL__\" IS JSON)", warn: "json → CLOB with IS JSON check. Native Oracle JSON type only available 21c+; this works on 12c+.", severity: "warn" },
-  { pg: "jsonb", oracle: "CLOB CHECK (\"__COL__\" IS JSON)", warn: "jsonb → CLOB with IS JSON check. jsonb's binary storage and indexing semantics do NOT translate; queries using jsonb operators (@>, ->) must be rewritten.", severity: "high" },
+  // __COLREF__ is replaced with a syntactically-valid Oracle reference to the
+  // column being checked: quoted name verbatim if the source was quoted,
+  // otherwise the unquoted Oracle-uppercase identifier (matches what Oracle
+  // creates for unquoted column names).
+  { pg: "json", oracle: "CLOB CHECK (__COLREF__ IS JSON)", warn: "json → CLOB with IS JSON check. Native Oracle JSON type only available 21c+; this works on 12c+.", severity: "warn" },
+  { pg: "jsonb", oracle: "CLOB CHECK (__COLREF__ IS JSON)", warn: "jsonb → CLOB with IS JSON check. jsonb's binary storage and indexing semantics do NOT translate; queries using jsonb operators (@>, ->) must be rewritten.", severity: "high" },
 ];
 
 /**
