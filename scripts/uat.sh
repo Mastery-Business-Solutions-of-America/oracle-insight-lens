@@ -213,6 +213,16 @@ check "21. numeric(>38) flagged out-of-range" bash -c "
   grep -q 'precision out of range' '$TMP/np.md'
 "
 
+# 22. CREATE TABLE IF NOT EXISTS stripped + warned
+cat > "$TMP/ine.sql" <<'SQL'
+CREATE TABLE IF NOT EXISTS users (id serial PRIMARY KEY);
+SQL
+check "22. CREATE TABLE IF NOT EXISTS stripped + warned" bash -c "
+  $CLI '$TMP/ine.sql' -o '$TMP/ine.ora.sql' --report '$TMP/ine.md' &&
+  ! grep -qi 'IF NOT EXISTS' '$TMP/ine.ora.sql' &&
+  grep -q 'IF NOT EXISTS' '$TMP/ine.md'
+"
+
 echo "------------------------"
 echo "Passed: $pass / $((pass + fail))"
 test $fail -eq 0
