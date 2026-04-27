@@ -6,14 +6,14 @@
   "author": "Sam <sam@getboltway.com>",
   "type": "module",
   "bin": {
-    "pg2ora": "./dist/cli.js"
+    "pg2ora": "./dist/cli.cjs"
   },
   "files": ["dist", "README.md", "LICENSE"],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "build": "esbuild src/cli.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/cli.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.js",
+    "build": "esbuild src/cli.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/cli.cjs --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "uat": "bash scripts/uat.sh",
