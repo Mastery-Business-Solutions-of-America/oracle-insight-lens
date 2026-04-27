@@ -403,6 +403,11 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       out.push(stmt);
       continue;
     }
+    // Strip leading SQL comments + whitespace to classify the statement.
+    // Comments themselves stay in the output (translateCreateTable preserves them).
+    const classifier = trimmed
+      .replace(/^(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s)+/g, "")
+      .trimStart();
 
     // Skip / pass-through Postgres-only statements
     if (/^\s*SET\s+/i.test(trimmed) || /^\s*SELECT\s+pg_catalog/i.test(trimmed)) {
