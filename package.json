@@ -14,6 +14,9 @@
   },
   "scripts": {
     "build": "esbuild src/cli.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/cli.cjs --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.cjs",
+    "build:dev": "echo 'pg2ora is a CLI — no dev server. Run: bun run build && node dist/cli.cjs --help'",
+    "dev": "echo 'pg2ora is a CLI — no dev server. Run: bun run build && node dist/cli.cjs --help'",
+    "start": "node dist/cli.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "uat": "bash scripts/uat.sh",
