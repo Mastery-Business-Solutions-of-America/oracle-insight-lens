@@ -409,30 +409,32 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       .replace(/^(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s)+/g, "")
       .trimStart();
 
+    // Classify against the comment-stripped form so leading `-- ...` lines
+    // don't hide the actual statement type from the dispatcher.
     // Skip / pass-through Postgres-only statements
-    if (/^\s*SET\s+/i.test(trimmed) || /^\s*SELECT\s+pg_catalog/i.test(trimmed)) {
+    if (/^SET\s+/i.test(classifier) || /^SELECT\s+pg_catalog/i.test(classifier)) {
       report.add({
         severity: "info",
         category: "skipped",
-        message: `Postgres-specific statement skipped: \`${trimmed.slice(0, 60).replace(/\s+/g, " ")}…\``,
+        message: `Postgres-specific statement skipped: \`${classifier.slice(0, 60).replace(/\s+/g, " ")}…\``,
       });
       continue;
     }
 
-    if (/^\s*CREATE\s+TABLE\b/i.test(trimmed)) {
+    if (/^CREATE\s+TABLE\b/i.test(classifier)) {
       out.push(translateCreateTable(stmt, report));
       continue;
     }
-    if (/^\s*CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(trimmed)) {
+    if (/^CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(classifier)) {
       out.push(translateCreateIndex(stmt, report));
       continue;
     }
-    if (/^\s*COMMENT\s+ON\b/i.test(trimmed)) {
+    if (/^COMMENT\s+ON\b/i.test(classifier)) {
       // COMMENT ON TABLE/COLUMN works identically in Oracle — pass through
       out.push(stmt);
       continue;
     }
-    if (/^\s*CREATE\s+EXTENSION\b/i.test(trimmed)) {
+    if (/^CREATE\s+EXTENSION\b/i.test(classifier)) {
       report.add({
         severity: "high",
         category: "extension",
@@ -440,7 +442,7 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       });
       continue;
     }
-    if (/^\s*CREATE\s+(OR\s+REPLACE\s+)?(FUNCTION|PROCEDURE|TRIGGER)\b/i.test(trimmed)) {
+    if (/^CREATE\s+(OR\s+REPLACE\s+)?(FUNCTION|PROCEDURE|TRIGGER)\b/i.test(classifier)) {
       report.add({
         severity: "high",
         category: "PL/pgSQL not translated",
@@ -449,7 +451,7 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       out.push(stmt);
       continue;
     }
-    if (/^\s*ALTER\s+TABLE\b/i.test(trimmed)) {
+    if (/^ALTER\s+TABLE\b/i.test(classifier)) {
       // Many ALTER TABLE clauses translate cleanly; a few don't
       let altered = stmt;
       altered = altered.replace(/\bSET\s+DATA\s+TYPE\b/gi, "MODIFY");
