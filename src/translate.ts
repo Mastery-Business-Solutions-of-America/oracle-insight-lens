@@ -562,10 +562,25 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       continue;
     }
     if (/^ALTER\s+TABLE\b/i.test(classifier)) {
-      // Many ALTER TABLE clauses translate cleanly; a few don't
-      let altered = stmt;
-      altered = altered.replace(/\bSET\s+DATA\s+TYPE\b/gi, "MODIFY");
-      out.push(altered);
+      // ALTER TABLE rewrites are dangerous: PG and Oracle differ in clause
+      // ordering, parens placement, and feature set. Rather than do a broad
+      // string substitution (which would corrupt comments, multi-clause
+      // statements, and USING clauses), we pass the statement through
+      // unchanged and emit a high-severity warning per warn-never-rewrite.
+      const c = classifier.toLowerCase();
+      const looksRisky =
+        /\bset\s+data\s+type\b/.test(c) ||
+        /\busing\b/.test(c) ||
+        /\balter\s+column\b/.test(c) ||
+        /\bdrop\s+constraint\b.*\bif\s+exists\b/.test(c);
+      if (looksRisky) {
+        report.add({
+          severity: "high",
+          category: "ALTER TABLE not translated",
+          message: `ALTER TABLE statement uses Postgres syntax that does not translate cleanly to Oracle (e.g. \`SET DATA TYPE\`, \`USING\`, or \`ALTER COLUMN\`). Statement preserved verbatim — rewrite as Oracle \`ALTER TABLE ... MODIFY (...)\` by hand.`,
+        });
+      }
+      out.push(stmt);
       continue;
     }
 
