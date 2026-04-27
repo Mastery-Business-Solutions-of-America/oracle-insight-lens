@@ -127,6 +127,92 @@ check "12. Ghost CMS example translates with report" bash -c "
   grep -q 'compatibility report' '$TMP/ghost.md'
 "
 
+# 13. array type warned + passed through (not silently corrupted to "CLOB []")
+cat > "$TMP/array.sql" <<'SQL'
+CREATE TABLE posts (id serial, tags text[]);
+SQL
+check "13. array type warned, not silently corrupted" bash -c "
+  $CLI '$TMP/array.sql' -o '$TMP/array.ora.sql' --report '$TMP/array.md' &&
+  ! grep -qE 'CLOB\s*\[' '$TMP/array.ora.sql' &&
+  grep -q 'array type' '$TMP/array.md'
+"
+
+# 14. quoted hyphenated jsonb column produces quoted CHECK identifier
+cat > "$TMP/jq.sql" <<'SQL'
+CREATE TABLE t ("user-data" jsonb);
+SQL
+check "14. quoted jsonb column → quoted IS JSON ref" bash -c "
+  $CLI '$TMP/jq.sql' -o '$TMP/jq.ora.sql' &&
+  grep -qF '\"user-data\" IS JSON' '$TMP/jq.ora.sql'
+"
+
+# 15. CREATE TABLE trailing clause (PARTITION BY/INHERITS/TABLESPACE) flagged + dropped
+cat > "$TMP/tail.sql" <<'SQL'
+CREATE TABLE t (id serial) PARTITION BY RANGE (id);
+SQL
+check "15. trailing PARTITION BY flagged" bash -c "
+  $CLI '$TMP/tail.sql' -o '$TMP/tail.ora.sql' --report '$TMP/tail.md' &&
+  ! grep -q 'PARTITION BY' '$TMP/tail.ora.sql' &&
+  grep -q 'table option dropped' '$TMP/tail.md'
+"
+
+# 16. comment containing comma in column body does not break the splitter
+cat > "$TMP/cmt.sql" <<'SQL'
+CREATE TABLE t (a int /* note: a,b,c */, b int);
+SQL
+check "16. comma inside /* comment */ does not split column list" bash -c "
+  $CLI '$TMP/cmt.sql' -o '$TMP/cmt.ora.sql' &&
+  grep -q 'a NUMBER(10)' '$TMP/cmt.ora.sql' &&
+  grep -q 'b NUMBER(10)' '$TMP/cmt.ora.sql'
+"
+
+# 17. ALTER TABLE SET DATA TYPE: passed through verbatim with high-severity warning
+cat > "$TMP/alter.sql" <<'SQL'
+ALTER TABLE t ALTER COLUMN c SET DATA TYPE varchar(20);
+SQL
+check "17. ALTER TABLE SET DATA TYPE flagged, not naive-rewritten" bash -c "
+  $CLI '$TMP/alter.sql' -o '$TMP/alter.ora.sql' --report '$TMP/alter.md' &&
+  grep -q 'SET DATA TYPE' '$TMP/alter.ora.sql' &&
+  grep -q 'ALTER TABLE not translated' '$TMP/alter.md'
+"
+
+# 18. CREATE INDEX INCLUDE (...) flagged + stripped
+cat > "$TMP/idx.sql" <<'SQL'
+CREATE INDEX i ON t (a) INCLUDE (b);
+SQL
+check "18. CREATE INDEX INCLUDE flagged + stripped" bash -c "
+  $CLI '$TMP/idx.sql' -o '$TMP/idx.ora.sql' --report '$TMP/idx.md' &&
+  ! grep -q 'INCLUDE' '$TMP/idx.ora.sql' &&
+  grep -q 'index feature dropped' '$TMP/idx.md'
+"
+
+# 19. EXCLUDE constraint flagged
+cat > "$TMP/excl.sql" <<'SQL'
+CREATE TABLE rooms (id serial, room int, period int4range, EXCLUDE USING gist (room WITH =, period WITH &&));
+SQL
+check "19. EXCLUDE constraint flagged high" bash -c "
+  $CLI '$TMP/excl.sql' -o '$TMP/excl.ora.sql' --report '$TMP/excl.md' &&
+  grep -q 'EXCLUDE constraint' '$TMP/excl.md'
+"
+
+# 20. varchar(>4000) flagged
+cat > "$TMP/big.sql" <<'SQL'
+CREATE TABLE t (s varchar(5000));
+SQL
+check "20. varchar(>4000) flagged out-of-range" bash -c "
+  $CLI '$TMP/big.sql' -o '$TMP/big.ora.sql' --report '$TMP/big.md' &&
+  grep -q 'length out of range' '$TMP/big.md'
+"
+
+# 21. numeric(>38) flagged
+cat > "$TMP/np.sql" <<'SQL'
+CREATE TABLE t (n numeric(100,2));
+SQL
+check "21. numeric(>38) flagged out-of-range" bash -c "
+  $CLI '$TMP/np.sql' -o '$TMP/np.ora.sql' --report '$TMP/np.md' &&
+  grep -q 'precision out of range' '$TMP/np.md'
+"
+
 echo "------------------------"
 echo "Passed: $pass / $((pass + fail))"
 test $fail -eq 0
