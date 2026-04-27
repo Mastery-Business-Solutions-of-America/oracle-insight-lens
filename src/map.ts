@@ -130,9 +130,14 @@ export function mapType(pgType: string, columnName?: string): MapResult | null {
     }
   }
 
-  // Substitute __COL__ placeholder for IS JSON checks
-  if (columnName && oracle.includes("__COL__")) {
-    oracle = oracle.replace(/__COL__/g, columnName);
+  // Substitute __COLREF__ placeholder for IS JSON checks.
+  // colNameRaw may be quoted ("foo") or bare (foo) — preserve the form so
+  // Oracle resolves the same identifier the column is created with.
+  if (colNameRaw && oracle.includes("__COLREF__")) {
+    const ref = /^"[^"]+"$/.test(colNameRaw)
+      ? colNameRaw // already quoted, case-sensitive identifier
+      : colNameRaw.toUpperCase(); // bare → Oracle uppercases at create time
+    oracle = oracle.replace(/__COLREF__/g, ref);
   }
 
   return { oracle, warn, severity };
