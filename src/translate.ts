@@ -208,7 +208,7 @@ function translateCreateTable(stmt: string, report: Report): string {
     translatedParts.push("  " + translateColumnDef(colNameRaw, rest, bareName, report));
   }
 
-  return `${head}${rawName} (\n${translatedParts.join(",\n")}\n);`;
+  return `${prefix}${head}${rawName} (\n${translatedParts.join(",\n")}\n);`;
 }
 
 function splitTopLevelCommas(s: string): string[] {
