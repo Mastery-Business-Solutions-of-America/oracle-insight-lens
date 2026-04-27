@@ -136,9 +136,16 @@ function splitStatements(sql: string): string[] {
  * Returns the Oracle text. Warnings are appended to `report`.
  */
 function translateCreateTable(stmt: string, report: Report): string {
+  // Strip leading whitespace + SQL comments to find the CREATE clause,
+  // but preserve them in the output by capturing the prefix.
+  const prefixRe = /^((?:\s*(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s))*)/;
+  const prefixMatch = stmt.match(prefixRe);
+  const prefix = prefixMatch ? prefixMatch[0] : "";
+  const rest = stmt.slice(prefix.length);
+
   // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( <body> ) [WITH (...)] ;
-  const headerRe = /^(\s*CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(([\s\S]*)\)\s*([^;]*);?\s*$/i;
-  const m = stmt.match(headerRe);
+  const headerRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(([\s\S]*)\)\s*([^;]*);?\s*$/i;
+  const m = rest.match(headerRe);
   if (!m) return stmt; // can't parse, leave alone — caller logs nothing
 
   const [, head, rawName, body] = m;
