@@ -1,4 +1,4 @@
-# pg2ora compatibility report
+# pg2oracle compatibility report
 
 Source: `examples/ghost/postgres.sql`
 Generated: 2026-04-27T06:47:38.469Z
@@ -107,4 +107,4 @@ Generated: 2026-04-27T06:47:38.469Z
 - **[type mapping]** _(table posts, column featured)_ boolean → NUMBER(1): true/false rewritten as 1/0. CHECK constraints not auto-added.
 
 ---
-pg2ora translates types; it never renames your objects.
+pg2oracle translates types; it never renames your objects.

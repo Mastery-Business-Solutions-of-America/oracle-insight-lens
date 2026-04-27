@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// pg2ora is a Node CLI, not a web app. The Lovable preview platform expects a
+// pg2oracle is a Node CLI, not a web app. The Lovable preview platform expects a
 // dev server on a port — this stub satisfies the healthcheck and serves a
 // simple HTML page explaining what the project actually is.
 import { createServer } from "node:http";
@@ -16,7 +16,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>pg2ora — PostgreSQL → Oracle DDL translator</title>
+<title>pg2oracle — PostgreSQL → Oracle DDL translator</title>
 <style>
   :root { color-scheme: light dark; }
   body { font: 16px/1.6 ui-sans-serif, system-ui, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1.5rem; }
@@ -28,7 +28,7 @@ const html = `<!doctype html>
 </head>
 <body>
   <span class="tag">CLI · v0.1.0</span>
-  <h1>pg2ora</h1>
+  <h1>pg2oracle</h1>
   <p>Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.</p>
   <p>This project is a command-line tool, not a web app — there is nothing interactive to render here.</p>
   <h2>Try it</h2>
@@ -47,6 +47,6 @@ const server = createServer((req, res) => {
 });
 
 server.listen(port, () => {
-  console.log(`pg2ora dev stub listening on http://localhost:${port}`);
-  console.log(`(this is just a placeholder — pg2ora is a CLI, see README.md)`);
+  console.log(`pg2oracle dev stub listening on http://localhost:${port}`);
+  console.log(`(this is just a placeholder — pg2oracle is a CLI, see README.md)`);
 });

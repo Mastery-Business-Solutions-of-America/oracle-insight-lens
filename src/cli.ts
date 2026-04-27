@@ -6,7 +6,7 @@ import { translate } from "./translate.js";
 const program = new Command();
 
 program
-  .name("pg2ora")
+  .name("pg2oracle")
   .description("Translate PostgreSQL DDL to Oracle DDL. File in, file out.\nWarns about lossy mappings and footguns; never renames your objects.")
   .version("0.1.0")
   .argument("[input]", "Input SQL file (omit or use '-' to read stdin)")
@@ -18,10 +18,10 @@ program
     "after",
     `
 Examples:
-  pg2ora schema.sql -o oracle.sql
-  pg2ora schema.sql -o oracle.sql --report compat.md
-  pg_dump --schema-only mydb | pg2ora > oracle.sql
-  pg2ora schema.sql --strict -o oracle.sql   # exit 2 on warnings (CI use)
+  pg2oracle schema.sql -o oracle.sql
+  pg2oracle schema.sql -o oracle.sql --report compat.md
+  pg_dump --schema-only mydb | pg2oracle > oracle.sql
+  pg2oracle schema.sql --strict -o oracle.sql   # exit 2 on warnings (CI use)
 
 Report severities:
   high  - will likely break on Oracle (jsonb operators, long identifiers, etc.)
@@ -48,7 +48,7 @@ async function readInput(): Promise<{ sql: string; sourceName: string }> {
     return { sql, sourceName: inputArg };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`pg2ora: cannot read input '${inputArg}': ${msg}\n`);
+    process.stderr.write(`pg2oracle: cannot read input '${inputArg}': ${msg}\n`);
     process.exit(1);
   }
 }
@@ -62,7 +62,7 @@ function writeOutput(path: string | undefined, content: string, label: string): 
     writeFileSync(path, content, "utf8");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`pg2ora: cannot write ${label} to '${path}': ${msg}\n`);
+    process.stderr.write(`pg2oracle: cannot write ${label} to '${path}': ${msg}\n`);
     process.exit(1);
   }
 }
@@ -84,9 +84,9 @@ async function main(): Promise<void> {
   if (opts.output) {
     const n = report.count();
     if (n > 0) {
-      process.stderr.write(`pg2ora: ${n} compatibility note(s)${opts.report ? ` written to ${opts.report}` : ""}\n`);
+      process.stderr.write(`pg2oracle: ${n} compatibility note(s)${opts.report ? ` written to ${opts.report}` : ""}\n`);
     } else {
-      process.stderr.write(`pg2ora: clean translation, no warnings\n`);
+      process.stderr.write(`pg2oracle: clean translation, no warnings\n`);
     }
   }
 
@@ -97,6 +97,6 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
   const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`pg2ora: ${msg}\n`);
+  process.stderr.write(`pg2oracle: ${msg}\n`);
   process.exit(1);
 });

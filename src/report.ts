@@ -1,6 +1,6 @@
 /**
  * Compatibility warning collector. The report IS the UX —
- * when pg2ora can't translate something cleanly, this is what the user reads.
+ * when pg2oracle can't translate something cleanly, this is what the user reads.
  */
 import type { Severity } from "./map.js";
 
@@ -37,7 +37,7 @@ export class Report {
 
   toMarkdown(inputName: string): string {
     const lines: string[] = [];
-    lines.push(`# pg2ora compatibility report`);
+    lines.push(`# pg2oracle compatibility report`);
     lines.push("");
     lines.push(`Source: \`${inputName}\``);
     lines.push(`Generated: ${new Date().toISOString()}`);
@@ -81,7 +81,7 @@ export class Report {
     }
 
     lines.push(`---`);
-    lines.push(`pg2ora translates types; it never renames your objects.`);
+    lines.push(`pg2oracle translates types; it never renames your objects.`);
     lines.push("");
     return lines.join("\n");
   }

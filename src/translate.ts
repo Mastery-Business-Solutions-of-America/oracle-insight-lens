@@ -571,7 +571,7 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
       report.add({
         severity: "high",
         category: "PL/pgSQL not translated",
-        message: `pg2ora does not translate PL/pgSQL function/procedure/trigger bodies. Statement preserved verbatim — rewrite manually as PL/SQL.`,
+        message: `pg2oracle does not translate PL/pgSQL function/procedure/trigger bodies. Statement preserved verbatim — rewrite manually as PL/SQL.`,
       });
       out.push(stmt);
       continue;
