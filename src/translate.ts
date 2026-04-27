@@ -143,13 +143,14 @@ function translateCreateTable(stmt: string, report: Report): string {
   const prefix = prefixMatch ? prefixMatch[0] : "";
   const rest = stmt.slice(prefix.length);
 
-  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( <body> ) [WITH (...)] ;
+  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( <body> ) [tail] ;
   const headerRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(([\s\S]*)\)\s*([^;]*);?\s*$/i;
   const m = rest.match(headerRe);
   if (!m) return stmt; // can't parse, leave alone — caller logs nothing
 
-  const [, head, rawName, body] = m;
+  const [, head, rawName, body, tailRaw] = m;
   if (!head || !rawName || body === undefined) return stmt;
+  const tail = (tailRaw ?? "").trim();
 
   const tableName = rawName.replace(/"/g, "");
   if (tableName.includes(".")) {
@@ -170,6 +171,19 @@ function translateCreateTable(stmt: string, report: Report): string {
     });
   }
 
+  // Trailing CREATE TABLE clauses (TABLESPACE, PARTITION BY, INHERITS, WITH (...))
+  // are Postgres-specific or syntactically incompatible with Oracle's placement.
+  // Per warn-never-rewrite: drop them from output and emit a high-severity warning
+  // identifying exactly what was dropped.
+  if (tail.length > 0) {
+    report.add({
+      severity: "high",
+      category: "table option dropped",
+      message: `CREATE TABLE \`${bareName}\` had trailing clause \`${tail.replace(/\s+/g, " ").slice(0, 120)}\` after the column list. Postgres clauses such as INHERITS, PARTITION BY, TABLESPACE, and WITH (...) do not translate to Oracle; clause dropped from output — rewrite manually if needed.`,
+      location: `table ${bareName}`,
+    });
+  }
+
   // Split body by top-level commas (respect parens)
   const parts = splitTopLevelCommas(body);
   const translatedParts: string[] = [];
@@ -178,9 +192,9 @@ function translateCreateTable(stmt: string, report: Report): string {
     const part = raw.trim();
     if (part.length === 0) continue;
 
-    // Constraint clauses: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, CONSTRAINT
+    // Constraint clauses: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK, CONSTRAINT, EXCLUDE
     if (/^(CONSTRAINT|PRIMARY\s+KEY|FOREIGN\s+KEY|UNIQUE|CHECK|EXCLUDE)\b/i.test(part)) {
-      translatedParts.push("  " + translateConstraint(part, report));
+      translatedParts.push("  " + translateConstraint(part, bareName, report));
       continue;
     }
 
