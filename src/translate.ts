@@ -396,16 +396,60 @@ function translateColumnModifiers(mods: string, tableName: string, colName: stri
   return out.trim();
 }
 
-function translateConstraint(part: string, report: Report): string {
+/**
+ * Validate that Oracle-side length/precision parameters fit Oracle's hard limits.
+ * varchar2: 4000 bytes by default (32767 only with MAX_STRING_SIZE=EXTENDED).
+ * NUMBER precision: max 38.
+ * We never clamp; we warn so the user keeps the source-of-truth choice.
+ */
+function validateOracleLengths(pgType: string, oracleType: string, tableName: string, colName: string, report: Report): void {
+  const vc = oracleType.match(/^VARCHAR2\((\d+)(?:\s+(?:BYTE|CHAR))?\)$/i);
+  if (vc) {
+    const n = Number(vc[1]);
+    if (n > 4000) {
+      report.add({
+        severity: "high",
+        category: "length out of range",
+        message: `\`${pgType}\` → \`${oracleType}\` exceeds Oracle's default 4000-byte VARCHAR2 limit. Requires MAX_STRING_SIZE=EXTENDED (12.1+, irreversible) or migrate to CLOB.`,
+        location: `table ${tableName}, column ${colName}`,
+      });
+    }
+  }
+  const num = oracleType.match(/^NUMBER\((\d+)(?:\s*,\s*(-?\d+))?\)$/i);
+  if (num) {
+    const p = Number(num[1]);
+    if (p > 38) {
+      report.add({
+        severity: "high",
+        category: "precision out of range",
+        message: `\`${pgType}\` → \`${oracleType}\` exceeds Oracle's NUMBER precision limit of 38. Output left unchanged — Oracle will reject it.`,
+        location: `table ${tableName}, column ${colName}`,
+      });
+    }
+  }
+}
+
+function translateConstraint(part: string, tableName: string, report: Report): string {
   // Most table constraints translate verbatim. Watch for:
   //  - DEFERRABLE INITIALLY DEFERRED on UNIQUE — Oracle supports it
   //  - INCLUDE (...) on PRIMARY KEY — Postgres-only, drop with warning
+  //  - EXCLUDE — Postgres-only, no Oracle equivalent
   let out = part;
+  if (/^\s*(?:CONSTRAINT\s+\S+\s+)?EXCLUDE\b/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "EXCLUDE constraint",
+      message: `EXCLUDE constraint has no Oracle equivalent. Output left unchanged — Oracle will reject it. Consider an application-level check or a row-level trigger.`,
+      location: `table ${tableName}`,
+    });
+    return out;
+  }
   if (/INCLUDE\s*\(/i.test(out)) {
     report.add({
       severity: "warn",
       category: "constraint feature dropped",
       message: `INCLUDE clause on constraint is Postgres-only. Removed from output.`,
+      location: `table ${tableName}`,
     });
     out = out.replace(/\s+INCLUDE\s*\([^)]*\)/gi, "");
   }
@@ -413,7 +457,7 @@ function translateConstraint(part: string, report: Report): string {
 }
 
 function translateCreateIndex(stmt: string, report: Report): string {
-  // CREATE [UNIQUE] INDEX [IF NOT EXISTS] <name> ON <table> [USING <method>] (cols);
+  // CREATE [UNIQUE] INDEX [IF NOT EXISTS] <name> ON <table> [USING <method>] (cols) [INCLUDE (...)] [WHERE ...];
   let out = stmt;
   // USING btree/hash/gin/gist — Oracle has its own index types, drop USING for btree (default)
   out = out.replace(/\s+USING\s+btree\b/gi, "");
@@ -434,6 +478,23 @@ function translateCreateIndex(stmt: string, report: Report): string {
       message: `\`IF NOT EXISTS\` on CREATE INDEX is not portable. Removed; Oracle will error if the index already exists.`,
     });
     out = out.replace(/\s+IF\s+NOT\s+EXISTS/gi, "");
+  }
+  // INCLUDE (...) — Postgres-only on CREATE INDEX (covering indexes)
+  if (/\bINCLUDE\s*\(/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "index feature dropped",
+      message: `\`INCLUDE (...)\` covering-index clause is Postgres-only. Removed from output — for similar effect on Oracle, add the columns to the index key list.`,
+    });
+    out = out.replace(/\s+INCLUDE\s*\([^)]*\)/gi, "");
+  }
+  // Partial-index WHERE — Oracle supports function-based indexes but not WHERE on plain indexes
+  if (/\)\s*WHERE\s+/i.test(out)) {
+    report.add({
+      severity: "high",
+      category: "partial index",
+      message: `Partial index \`WHERE\` clause is Postgres-only. Output left unchanged — Oracle will reject it. Rewrite as a function-based index or materialized view.`,
+    });
   }
   return out;
 }
