@@ -21,6 +21,14 @@ describe("translate — core behavior", () => {
     expect(oracle).not.toMatch(/DEFAULT\s+true/i);
   });
 
+  it("strips IF NOT EXISTS from CREATE TABLE and warns", () => {
+    const { oracle, report } = translate(`CREATE TABLE IF NOT EXISTS t (id serial);`);
+    expect(oracle).not.toMatch(/IF\s+NOT\s+EXISTS/i);
+    expect(oracle).toMatch(/CREATE\s+TABLE\s+t\s*\(/);
+    const md = report.toMarkdown("test.sql");
+    expect(md).toMatch(/IF NOT EXISTS/);
+  });
+
   it("translates DEFAULT now() → DEFAULT SYSTIMESTAMP", () => {
     const { oracle } = translate(`CREATE TABLE t (created_at timestamp DEFAULT now());`);
     expect(oracle).toContain("DEFAULT SYSTIMESTAMP");
