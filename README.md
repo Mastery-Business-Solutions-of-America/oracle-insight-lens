@@ -20,7 +20,7 @@ quickly and defensibly, what a Postgres schema is going to cost you on Oracle.
 npm install -g pg2oracle
 ```
 
-Requires **Node 22+**.
+Requires **Node 18+**.
 
 ---
 
