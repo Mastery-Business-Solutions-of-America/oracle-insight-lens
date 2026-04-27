@@ -143,14 +143,29 @@ function translateCreateTable(stmt: string, report: Report): string {
   const prefix = prefixMatch ? prefixMatch[0] : "";
   const rest = stmt.slice(prefix.length);
 
-  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( <body> ) [tail] ;
-  const headerRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(([\s\S]*)\)\s*([^;]*);?\s*$/i;
-  const m = rest.match(headerRe);
-  if (!m) return stmt; // can't parse, leave alone — caller logs nothing
-
-  const [, head, rawName, body, tailRaw] = m;
-  if (!head || !rawName || body === undefined) return stmt;
-  const tail = (tailRaw ?? "").trim();
+  // Capture: CREATE TABLE [IF NOT EXISTS] <name> ( ... )
+  // We can't use a single regex for the body because it must respect nested
+  // parens (e.g. numeric(10,2), CHECK (x IN (1,2))). Match the head + name +
+  // opening paren, then walk the string to find the matching close paren.
+  const headRe = /^(CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?)("?[\w.]+"?(?:\."?[\w]+"?)?)\s*\(/i;
+  const hm = rest.match(headRe);
+  if (!hm) return stmt;
+  const [, head, rawName] = hm;
+  if (!head || !rawName) return stmt;
+  const bodyStart = hm[0].length;
+  let depth = 1;
+  let bodyEnd = -1;
+  for (let i = bodyStart; i < rest.length; i++) {
+    const ch = rest[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") {
+      depth--;
+      if (depth === 0) { bodyEnd = i; break; }
+    }
+  }
+  if (bodyEnd < 0) return stmt;
+  const body = rest.slice(bodyStart, bodyEnd);
+  const tail = rest.slice(bodyEnd + 1).replace(/;?\s*$/, "").trim();
 
   const tableName = rawName.replace(/"/g, "");
   if (tableName.includes(".")) {
