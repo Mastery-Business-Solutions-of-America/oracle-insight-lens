@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// Built bundle gets a shebang via esbuild's --banner flag (see package.json).
 import { Command } from "commander";
 import { readFileSync, writeFileSync } from "node:fs";
 import { translate } from "./translate.js";
