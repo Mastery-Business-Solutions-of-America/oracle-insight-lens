@@ -1,8 +1,10 @@
-# pg2ora
+# pg2oracle
+
+> **This is an independent open-source project. It is not an Oracle product and is not affiliated with, endorsed by, or sponsored by Oracle Corporation.**
 
 > Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.
 
-`pg2ora` is a single-binary CLI that converts a Postgres schema dump into
+`pg2oracle` is a single-binary CLI that converts a Postgres schema dump into
 Oracle-compatible DDL and a Markdown compatibility report. It is intentionally
 **boring**: hardcoded type mappings, no AST round-trips, no renames, no
 hidden defaults. What you give it is what you get back, plus warnings.
@@ -15,7 +17,7 @@ quickly and defensibly, what a Postgres schema is going to cost you on Oracle.
 ## Install
 
 ```bash
-npm install -g pg2ora
+npm install -g pg2oracle
 ```
 
 Requires **Node 22+**.
@@ -26,16 +28,16 @@ Requires **Node 22+**.
 
 ```bash
 # File in, file out
-pg2ora schema.sql -o oracle.sql
+pg2oracle schema.sql -o oracle.sql
 
 # With a compatibility report
-pg2ora schema.sql -o oracle.sql --report compat.md
+pg2oracle schema.sql -o oracle.sql --report compat.md
 
 # Pipe from pg_dump
-pg_dump --schema-only mydb | pg2ora > oracle.sql
+pg_dump --schema-only mydb | pg2oracle > oracle.sql
 
 # CI mode: exit 2 on any warning
-pg2ora schema.sql --strict -o oracle.sql
+pg2oracle schema.sql --strict -o oracle.sql
 ```
 
 ### Flags
@@ -96,7 +98,7 @@ pg2ora schema.sql --strict -o oracle.sql
 
 ## What it does **not** do
 
-This is intentional. `pg2ora` will never:
+This is intentional. `pg2oracle` will never:
 
 - **Rename your objects.** Identifiers >30 chars (Oracle 11g/12.1 limit) are
   flagged in the report but the output is left unchanged. You decide whether
@@ -151,7 +153,7 @@ bun run typecheck
 
 ## Trademarks
 
-`pg2ora` is an independent open-source project and is **not affiliated with,
+`pg2oracle` is an independent open-source project and is **not affiliated with,
 endorsed by, or sponsored by Oracle Corporation or the PostgreSQL Global
 Development Group**. "Oracle" is a registered trademark of Oracle Corporation.
 "PostgreSQL" and the Slonik logo are trademarks of the PostgreSQL Community
