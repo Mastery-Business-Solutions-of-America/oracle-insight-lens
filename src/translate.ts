@@ -216,14 +216,29 @@ function splitTopLevelCommas(s: string): string[] {
   let depth = 0;
   let buf = "";
   let inSingle = false;
+  let inLineComment = false;
+  let inBlockComment = false;
   for (let i = 0; i < s.length; i++) {
     const c = s[i]!;
+    const next = i + 1 < s.length ? s[i + 1] : "";
+    if (inLineComment) {
+      buf += c;
+      if (c === "\n") inLineComment = false;
+      continue;
+    }
+    if (inBlockComment) {
+      buf += c;
+      if (c === "*" && next === "/") { buf += next; i++; inBlockComment = false; }
+      continue;
+    }
     if (inSingle) {
       buf += c;
       if (c === "'" && s[i + 1] !== "'") inSingle = false;
       else if (c === "'" && s[i + 1] === "'") { buf += s[++i]; }
       continue;
     }
+    if (c === "-" && next === "-") { buf += c; inLineComment = true; continue; }
+    if (c === "/" && next === "*") { buf += c + next; i++; inBlockComment = true; continue; }
     if (c === "'") { inSingle = true; buf += c; continue; }
     if (c === "(") depth++;
     if (c === ")") depth--;
