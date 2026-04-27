@@ -150,9 +150,9 @@ Ghost CMS schema:
 
 ```bash
 bun install
-bun run test          # 27 unit tests
-bun run build         # → dist/cli.cjs (single-file, ~128 KB)
-bun run uat           # 12-criteria acceptance script
+bun run test          # 29 unit tests
+bun run build         # → dist/cli.cjs (single-file, ~134 KB)
+bun run uat           # 22-criteria acceptance script
 bun run typecheck
 ```
 
