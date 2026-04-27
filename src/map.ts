@@ -99,7 +99,7 @@ export interface MapResult {
   severity?: Severity;
 }
 
-export function mapType(pgType: string, columnName?: string): MapResult | null {
+export function mapType(pgType: string, colNameRaw?: string): MapResult | null {
   const trimmed = pgType.trim();
   const m = findMapping(trimmed);
   if (!m) return null;
