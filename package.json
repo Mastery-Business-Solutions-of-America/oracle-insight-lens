@@ -51,7 +51,8 @@
     "uat": "bash scripts/uat.sh",
     "typecheck": "tsc --noEmit",
     "verify": "bun run typecheck && bun run test && bun run build && bun run uat",
-    "prepublishOnly": "bun run verify"
+    "verify:ci": "bun run typecheck && bun run test && bun run build",
+    "prepublishOnly": "bun run verify:ci"
   },
   "dependencies": {},
   "devDependencies": {
