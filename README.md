@@ -149,6 +149,17 @@ bun run typecheck
 
 ---
 
+## Trademarks
+
+`pg2ora` is an independent open-source project and is **not affiliated with,
+endorsed by, or sponsored by Oracle Corporation or the PostgreSQL Global
+Development Group**. "Oracle" is a registered trademark of Oracle Corporation.
+"PostgreSQL" and the Slonik logo are trademarks of the PostgreSQL Community
+Association of Canada. All trademarks are the property of their respective
+owners and are used here for descriptive purposes only.
+
+---
+
 ## License
 
 MIT © Sam &lt;sam@getboltway.com&gt;
