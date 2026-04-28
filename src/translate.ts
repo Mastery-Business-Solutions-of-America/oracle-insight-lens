@@ -536,6 +536,7 @@ function translateCreateIndex(stmt: string, report: Report): string {
  */
 export function translate(sql: string, sourceName = "input"): TranslateResult {
   const report = new Report();
+  detectLicenseSignals(sql, report);
   const statements = splitStatements(sql);
   const out: string[] = [];
 
