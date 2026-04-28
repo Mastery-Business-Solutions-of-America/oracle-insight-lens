@@ -1,6 +1,6 @@
 {
   "name": "pg2oracle",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.",
   "license": "MIT",
   "author": "Sam <sam@getboltway.com>",
@@ -19,28 +19,33 @@
     "postgres",
     "postgresql",
     "oracle",
+    "oracle-database",
     "migration",
     "ddl",
     "schema",
     "sql",
     "translate",
     "converter",
+    "transpiler",
     "pg_dump",
     "database",
-    "cli"
+    "cli",
+    "diligence",
+    "assessment",
+    "compatibility-report"
   ],
   "type": "module",
   "bin": {
     "pg2oracle": "./dist/cli.cjs"
   },
   "files": [
-    "dist",
+    "dist/cli.cjs",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
