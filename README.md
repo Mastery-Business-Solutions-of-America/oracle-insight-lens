@@ -188,7 +188,9 @@ Migration Workbench, not this.
 
 ## Compatibility report
 
-Three severity levels:
+Two parts: per-statement findings and an Oracle edition / option signal table.
+
+**Severities** (per-statement findings):
 
 - **high** — will likely break on Oracle (jsonb operators, long identifiers, dropped defaults)
 - **warn** — lossy or behavior change (`boolean → NUMBER(1)`, `uuid → RAW(16)`)
@@ -196,16 +198,42 @@ Three severity levels:
 
 Use `--strict` to fail CI on any `warn` or `high` (exit code 2).
 
+### Oracle edition & option signals
+
+Every report ends with an "Oracle edition & option signals" table that flags
+schema features whose Oracle landing zone tends to involve specific Database
+editions or options. Examples:
+
+| If the source uses … | The report flags … |
+|---|---|
+| `PARTITION BY RANGE/LIST/HASH` | Oracle Partitioning option (EE-only on-prem; included in ADB) |
+| `jsonb` columns | Native `JSON` type (21c+) vs JSON-on-CLOB (12c–19c) |
+| `CREATE POLICY` / `ENABLE ROW LEVEL SECURITY` | VPD (included in EE) / OLS (separately licensed) |
+| `geometry` / `geography` columns | Oracle Spatial (EE option on-prem) / Locator (all editions) |
+| `tsvector` / `to_tsvector` / GIN indexes | Oracle Text (all editions, different syntax) |
+| `pgcrypto`, `uuid-ossp`, `vector` extensions | DBMS_CRYPTO, SYS_GUID, AI Vector Search (23ai) |
+| Identifiers > 30 chars | Oracle 12.2+ extended identifier length (128 chars) |
+| Multiple non-`public` schemas | Oracle Multitenant option / schema-as-tenant tradeoff |
+
+Wording is observational and asks the reader to verify against their Oracle
+contract, deployment model (on-prem / OCI / ADB), and actual usage.
+**`pg2oracle` is not affiliated with Oracle and does not provide licensing
+advice** — the section exists to make the conversation faster, not to settle
+it.
+
 ---
 
-## Example
+## Examples
 
-See [`examples/ghost/`](examples/ghost/) for a real-world translation of the
-Ghost CMS schema:
+Three reference translations live in [`examples/`](examples/), each with input
+SQL, generated Oracle DDL, and a compatibility report:
 
-- [`postgres.sql`](examples/ghost/postgres.sql) — input
-- [`oracle.sql`](examples/ghost/oracle.sql) — output
-- [`compat.md`](examples/ghost/compat.md) — report
+- [`examples/ghost/`](examples/ghost/) — Ghost CMS (CMS schema, varchar-heavy)
+- [`examples/saas/`](examples/saas/) — multi-tenant B2B SaaS (RLS, JSON, UUID, pgcrypto)
+- [`examples/warehouse/`](examples/warehouse/) — Kimball star schema with partitioned fact + materialized view (Exadata / ADW shape)
+
+Each `compat.md` ends with an Oracle edition & option signal table — read
+those first if you're scoping a target.
 
 ---
 
