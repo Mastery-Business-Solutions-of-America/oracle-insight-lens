@@ -1,0 +1,55 @@
+name: Feature / mapping request
+description: Request a new type mapping, statement handler, or report signal
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario
+      description: What Postgres construct, and what should it become on Oracle?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example input + desired output
+      render: sql
+    validations:
+      required: true
+  - type: dropdown
+    id: target_version
+    attributes:
+      label: Oracle target version
+      options:
+        - "23ai"
+        - "21c"
+        - "19c"
+        - "12.2"
+        - "12.1"
+        - "11g"
+        - "Autonomous Database (ADB)"
+        - "Not sure / not relevant"
+    validations:
+      required: true
+  - type: dropdown
+    id: target_edition
+    attributes:
+      label: Target edition
+      options:
+        - "Enterprise Edition (EE)"
+        - "Standard Edition 2 (SE2)"
+        - "Autonomous Database (ADB)"
+        - "Express Edition (XE)"
+        - "Not sure"
+    validations:
+      required: true
+  - type: input
+    id: options
+    attributes:
+      label: Oracle options involved (if any)
+      description: e.g. Partitioning, Spatial, Advanced Compression, Text. Helps prioritize.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Migration scope, M&A diligence window, customer-facing assessment, internal landing-zone work, etc. Helps us understand impact.

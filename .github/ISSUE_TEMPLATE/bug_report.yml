@@ -1,0 +1,66 @@
+name: Bug report
+description: Something pg2oracle translates incorrectly or fails on
+labels: ["bug"]
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Input DDL (minimal repro)
+      description: Smallest Postgres DDL that reproduces the issue.
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Oracle output
+      description: What the translation should look like, and why.
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual output / error
+      render: shell
+    validations:
+      required: true
+  - type: dropdown
+    id: target_version
+    attributes:
+      label: Oracle target version
+      options:
+        - "23ai"
+        - "21c"
+        - "19c"
+        - "12.2"
+        - "12.1"
+        - "11g"
+        - "Autonomous Database (ADB)"
+        - "Not sure / not relevant"
+    validations:
+      required: true
+  - type: dropdown
+    id: target_edition
+    attributes:
+      label: Target edition (best guess is fine)
+      options:
+        - "Enterprise Edition (EE)"
+        - "Standard Edition 2 (SE2)"
+        - "Autonomous Database (ADB)"
+        - "Express Edition (XE)"
+        - "Not sure"
+    validations:
+      required: true
+  - type: input
+    id: options
+    attributes:
+      label: Licensed Oracle options in scope (if known)
+      description: e.g. Partitioning, Advanced Compression, Multitenant, Spatial, Advanced Security, GoldenGate. Leave blank if unknown.
+  - type: input
+    id: version
+    attributes:
+      label: pg2oracle version
+      description: Output of `pg2oracle --version`
+    validations:
+      required: true
