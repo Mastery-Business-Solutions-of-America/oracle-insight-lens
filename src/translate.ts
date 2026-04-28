@@ -625,3 +625,62 @@ export function translate(sql: string, sourceName = "input"): TranslateResult {
     report,
   };
 }
+
+/**
+ * Source-level scan for Oracle edition / option signals. Cheap regex sweep
+ * over the raw input — these are observations, not translations, so they
+ * don't need to participate in the statement-level rewriter. Each detection
+ * fires at most one signal per category (the Report dedupes by key).
+ */
+function detectLicenseSignals(sql: string, report: Report): void {
+  // Strip line + block comments so PG dump headers don't create false positives.
+  const src = sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
+  if (/\bPARTITION\s+BY\s+RANGE\b/i.test(src)) emitSignal(report, "partitioning.range");
+  if (/\bPARTITION\s+BY\s+LIST\b/i.test(src)) emitSignal(report, "partitioning.list");
+  if (/\bPARTITION\s+BY\s+HASH\b/i.test(src)) emitSignal(report, "partitioning.hash");
+
+  if (/\b(jsonb|json)\b/i.test(src) || /->>?|@>|<@/.test(src)) {
+    emitSignal(report, "json.usage");
+  }
+
+  if (/\bCREATE\s+POLICY\b/i.test(src) || /\bENABLE\s+ROW\s+LEVEL\s+SECURITY\b/i.test(src)) {
+    emitSignal(report, "rls.policy");
+  }
+
+  if (/\bCREATE\s+MATERIALIZED\s+VIEW\b/i.test(src)) {
+    emitSignal(report, "materialized.view");
+  }
+
+  if (/\b(geometry|geography)\s*\(/i.test(src)) {
+    emitSignal(report, "spatial.geometry");
+  }
+
+  if (/\btsvector\b/i.test(src) || /\bto_tsvector\s*\(/i.test(src) || /\bUSING\s+gin\b/i.test(src)) {
+    emitSignal(report, "fulltext.search");
+  }
+
+  const extRe = /CREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?"?([\w-]+)"?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = extRe.exec(src)) !== null) {
+    const name = (m[1] ?? "").toLowerCase();
+    if (name === "pgcrypto") emitSignal(report, "extension.pgcrypto");
+    else if (name === "uuid-ossp") emitSignal(report, "extension.uuid");
+    else if (name === "postgis") emitSignal(report, "extension.postgis");
+    else if (name === "vector") emitSignal(report, "extension.pgvector");
+  }
+  if (/\bgen_random_uuid\s*\(/i.test(src)) emitSignal(report, "extension.uuid");
+
+  const schemas = new Set<string>();
+  const schRe = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(\w+)"?\.\w/gi;
+  while ((m = schRe.exec(src)) !== null) {
+    if (m[1] && m[1].toLowerCase() !== "public") schemas.add(m[1].toLowerCase());
+  }
+  if (schemas.size >= 2) emitSignal(report, "schema.multitenancy");
+
+  const textCount = (src.match(/\b(text|bytea)\b/gi) ?? []).length;
+  if (textCount >= 10) emitSignal(report, "advanced.compression");
+}
+
