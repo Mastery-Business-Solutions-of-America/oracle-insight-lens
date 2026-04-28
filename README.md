@@ -159,6 +159,33 @@ The compatibility report is the UX. Read it.
 
 ---
 
+## Known gaps (v0.1.x)
+
+These are **deliberately out of scope** today. If your schema relies on them,
+plan a manual pass — `pg2oracle` will either pass them through verbatim with a
+warning or skip them entirely.
+
+| Area | Status | What you need to do |
+|---|---|---|
+| `CREATE SEQUENCE` | not translated | Rewrite to Oracle `CREATE SEQUENCE` syntax (most syntax is portable; `OWNED BY` and `AS <type>` are not). |
+| `nextval('seq_name')` defaults | dropped with warning | Replace with `seq_name.NEXTVAL` or migrate the column to an identity column. |
+| Partitioning (`PARTITION BY RANGE/LIST/HASH`) | not translated | Re-author using Oracle partitioning DDL (different syntax and capabilities). |
+| Tablespaces & storage clauses | stripped | Add Oracle `TABLESPACE` / storage clauses post-translation per your standards. |
+| Schemas / `SET search_path` | skipped | Decide on Oracle schema/user mapping up front; prefix object names if needed. |
+| Materialized views | passed through verbatim, will likely fail | Rewrite as Oracle materialized views (refresh modes differ). |
+| Views with PG-specific functions | passed through verbatim | Audit and rewrite by hand. |
+| Foreign data wrappers, `INHERITS`, `RULE`, `LISTEN/NOTIFY`, generated columns with PG expressions | not handled | No equivalent or out of scope. |
+| PL/pgSQL function/trigger bodies | preserved verbatim with high warning | Rewrite as PL/SQL by hand. |
+| `jsonb` operators (`@>`, `->`, `->>`) in views/checks | not rewritten | Rewrite using `JSON_VALUE`, `JSON_QUERY`, `JSON_EXISTS`. |
+| Row-level security policies | not handled | Re-implement using Oracle VPD / OLS. |
+| Collations, extensions, `CREATE TYPE` (composite/enum) | dropped or warned | Manual mapping required. |
+
+The point is the **report**, not magical translation. If you need any of the
+above translated automatically, the right tool is Oracle SQL Developer
+Migration Workbench, not this.
+
+---
+
 ## Compatibility report
 
 Three severity levels:
