@@ -248,6 +248,7 @@ function translateCreateTable(stmt: string, report: Report): string {
         message: `Column name \`${colName}\` is ${colName.length} chars; exceeds Oracle 30-char limit. Output unchanged.`,
         location: `table ${bareName}, column ${colName}`,
       });
+      emitSignal(report, "long.identifier", `table ${bareName}, column ${colName}`);
     }
 
     translatedParts.push("  " + translateColumnDef(colNameRaw, rest, bareName, report));
