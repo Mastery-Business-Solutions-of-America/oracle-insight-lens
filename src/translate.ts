@@ -16,6 +16,7 @@
  */
 import { mapType, type MapResult } from "./map.js";
 import { Report } from "./report.js";
+import { emitSignal } from "./signals.js";
 
 export interface TranslateResult {
   oracle: string;
