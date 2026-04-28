@@ -199,6 +199,7 @@ function translateCreateTable(stmt: string, report: Report): string {
       message: `Table name \`${bareName}\` is ${bareName.length} chars; Oracle 11g/12.1 limit is 30. Output is left unchanged — rename in Postgres before migrating, or target Oracle 12.2+.`,
       location: `table ${bareName}`,
     });
+    emitSignal(report, "long.identifier", `table ${bareName}`);
   }
 
   // Trailing CREATE TABLE clauses (TABLESPACE, PARTITION BY, INHERITS, WITH (...))
