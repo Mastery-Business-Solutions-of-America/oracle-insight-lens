@@ -5,6 +5,19 @@ All notable changes to `pg2oracle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-04-28
+
+### Changed
+
+- Tightened published tarball: only `dist/cli.cjs` ships (no stray
+  `dist/` artifacts).
+- Bumped minimum supported Node from 18 to 20 (current LTS).
+- Expanded npm keywords for discoverability.
+
+### Added
+
+- README badges: npm version, monthly downloads, license, supported Node.
+
 ## [0.1.0] — 2026-04-27
 
 Initial public release.
@@ -27,4 +40,5 @@ Initial public release.
 - 29 unit tests + 22-criterion UAT script
 - Single-file build (~134 KB, no runtime deps) targeting Node 22+
 
-[0.1.0]: https://github.com/sambolt/pg2oracle/releases/tag/v0.1.0
+[0.1.1]: https://github.com/Mastery-Business-Solutions-of-America/oracle-insight-lens/releases/tag/v0.1.1
+[0.1.0]: https://github.com/Mastery-Business-Solutions-of-America/oracle-insight-lens/releases/tag/v0.1.0

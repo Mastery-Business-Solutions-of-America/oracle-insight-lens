@@ -1,5 +1,10 @@
 # pg2oracle
 
+[![npm version](https://img.shields.io/npm/v/pg2oracle.svg)](https://www.npmjs.com/package/pg2oracle)
+[![npm downloads](https://img.shields.io/npm/dm/pg2oracle.svg)](https://www.npmjs.com/package/pg2oracle)
+[![license](https://img.shields.io/npm/l/pg2oracle.svg)](./LICENSE)
+[![node](https://img.shields.io/node/v/pg2oracle.svg)](https://nodejs.org)
+
 > **This is an independent open-source project. It is not an Oracle product and is not affiliated with, endorsed by, or sponsored by Oracle Corporation.**
 
 > Translate PostgreSQL DDL to Oracle DDL. File in, file out. Honest about what it can't do.
@@ -20,7 +25,7 @@ quickly and defensibly, what a Postgres schema is going to cost you on Oracle.
 npm install -g pg2oracle
 ```
 
-Requires **Node 18+**.
+Requires **Node 20+**.
 
 ---
 
