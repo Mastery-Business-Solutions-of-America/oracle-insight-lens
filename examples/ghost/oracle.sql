@@ -3,28 +3,28 @@
 -- Trimmed to ~12 representative tables to keep the README screenshot readable.
 
 CREATE TABLE users (
-    id varchar(24) NOT NULL,
-    name varchar(191) NOT NULL,
-    slug varchar(191) NOT NULL,
-    password varchar(60) NOT NULL,
-    email varchar(191) NOT NULL,
-    profile_image varchar(2000),
-    cover_image varchar(2000),
-    bio text,
-    website varchar(2000),
-    location text,
-    accessibility text,
-    status varchar(50) NOT NULL DEFAULT 'active',
-    locale varchar(6),
-    visibility varchar(50) NOT NULL DEFAULT 'public',
-    meta_title varchar(2000),
-    meta_description varchar(2000),
-    tour text,
-    last_seen timestamp,
-    created_at timestamp NOT NULL,
-    created_by varchar(24) NOT NULL,
-    updated_at timestamp,
-    updated_by varchar(24)
+  id VARCHAR2(24) NOT NULL,
+  name VARCHAR2(191) NOT NULL,
+  slug VARCHAR2(191) NOT NULL,
+  password VARCHAR2(60) NOT NULL,
+  email VARCHAR2(191) NOT NULL,
+  profile_image VARCHAR2(2000),
+  cover_image VARCHAR2(2000),
+  bio CLOB,
+  website VARCHAR2(2000),
+  location CLOB,
+  accessibility CLOB,
+  status VARCHAR2(50) NOT NULL DEFAULT 'active',
+  locale VARCHAR2(6),
+  visibility VARCHAR2(50) NOT NULL DEFAULT 'public',
+  meta_title VARCHAR2(2000),
+  meta_description VARCHAR2(2000),
+  tour CLOB,
+  last_seen TIMESTAMP,
+  created_at TIMESTAMP NOT NULL,
+  created_by VARCHAR2(24) NOT NULL,
+  updated_at TIMESTAMP,
+  updated_by VARCHAR2(24)
 );
 
 CREATE TABLE posts (
@@ -128,7 +128,7 @@ CREATE TABLE sessions (
   id VARCHAR2(24) NOT NULL,
   session_id VARCHAR2(32) NOT NULL,
   user_id VARCHAR2(24) NOT NULL,
-  session_data CLOB CHECK ("session_data" IS JSON) NOT NULL,
+  session_data CLOB CHECK (SESSION_DATA IS JSON) NOT NULL,
   created_at TIMESTAMP NOT NULL,
   updated_at TIMESTAMP
 );
