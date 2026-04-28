@@ -15,7 +15,11 @@ const program = new Command();
 
 program
   .name("pg2oracle")
-  .description("Translate PostgreSQL DDL to Oracle DDL. File in, file out.\nWarns about lossy mappings and footguns; never renames your objects.")
+  .description(
+    "Translate PostgreSQL DDL to Oracle DDL. Produces first-pass landing-zone\n" +
+      "DDL for Oracle Database 19c / 21c+ plus a written compatibility report.\n" +
+      "Warns about lossy mappings and footguns; never renames your objects.",
+  )
   .version(VERSION)
   .argument("[input]", "Input SQL file (omit or use '-' to read stdin)")
   .option("-o, --output <file>", "Write Oracle DDL to file (default: stdout)")
@@ -31,10 +35,23 @@ Examples:
   pg_dump --schema-only mydb | pg2oracle > oracle.sql
   pg2oracle schema.sql --strict -o oracle.sql   # exit 2 on warnings (CI use)
 
-Report severities:
-  high  - will likely break on Oracle (jsonb operators, long identifiers, etc.)
+Report sections:
+  Summary                          severity counts
+  High / Warnings / Info           per-statement findings
+  Oracle edition & option signals  features that influence target edition
+                                   (Partitioning, JSON, Spatial, RLS, ...)
+
+Severities:
+  high  - will likely break on Oracle (jsonb operators, long identifiers, ...)
   warn  - lossy or behavior change (boolean -> NUMBER(1), uuid -> RAW(16))
   info  - non-blocking notes (statements skipped, etc.)
+
+Defaults target Oracle 19c / 21c+ landing zones. For 11g / 12.1, expect
+identity-column and IS-JSON findings to require manual rework.
+
+This is an independent open-source project. Not affiliated with, endorsed by,
+or sponsored by Oracle Corporation. Report content is observational and is
+not licensing advice.
 `,
   );
 
