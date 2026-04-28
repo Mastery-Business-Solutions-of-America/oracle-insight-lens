@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README: new "Oracle edition & option signals" sub-section under Compatibility
   report; examples list expanded to three (Ghost CMS, multi-tenant SaaS,
   analytics warehouse).
+- Publish verification now uses a cross-platform prepublish path that avoids
+  requiring `bash` on Windows.
 
 ## [0.1.1] — 2026-04-28
 
