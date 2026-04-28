@@ -5,6 +5,33 @@ All notable changes to `pg2oracle` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-04-28
+
+### Added
+
+- **Oracle edition & option signals** section in every compatibility report.
+  Observational table mapping schema features to the Oracle Database editions
+  and options typically involved on a like-for-like landing zone (Partitioning,
+  JSON 21c+ vs JSON-on-CLOB, VPD/OLS for RLS, Spatial/Locator, Oracle Text,
+  AI Vector Search 23ai, Multitenant, Advanced Compression, Advanced Security).
+  Wording is observational with a clear non-licensing-advice disclaimer.
+- New examples:
+  - `examples/saas/` — multi-tenant SaaS schema (RLS, JSON, UUID, pgcrypto).
+  - `examples/warehouse/` — Kimball star schema with a partitioned fact table
+    and a materialized view (Exadata / ADW shape).
+- GitHub issue templates that capture Oracle target version, edition (SE2 / EE
+  / ADB / XE), and licensed options.
+- Compatibility report header now declares the default landing-zone target
+  (Oracle Database 19c / 21c+).
+
+### Changed
+
+- `--help` rewritten to name the report sections, default landing-zone target,
+  and the non-affiliation / no-licensing-advice disclaimer.
+- README: new "Oracle edition & option signals" sub-section under Compatibility
+  report; examples list expanded to three (Ghost CMS, multi-tenant SaaS,
+  analytics warehouse).
+
 ## [0.1.1] — 2026-04-28
 
 ### Changed
@@ -40,5 +67,6 @@ Initial public release.
 - 29 unit tests + 22-criterion UAT script
 - Single-file build (~134 KB, no runtime deps) targeting Node 22+
 
-[0.1.1]: https://github.com/Mastery-Business-Solutions-of-America/oracle-insight-lens/releases/tag/v0.1.1
-[0.1.0]: https://github.com/Mastery-Business-Solutions-of-America/oracle-insight-lens/releases/tag/v0.1.0
+[0.1.2]: https://github.com/Mastery-Business-Solutions-of-America/pg2oracle/releases/tag/v0.1.2
+[0.1.1]: https://github.com/Mastery-Business-Solutions-of-America/pg2oracle/releases/tag/v0.1.1
+[0.1.0]: https://github.com/Mastery-Business-Solutions-of-America/pg2oracle/releases/tag/v0.1.0
