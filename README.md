@@ -16,15 +16,15 @@ hidden defaults. What you give it is what you get back, plus warnings.
 
 ## Who this is for
 
-- **Migration leads & DBAs** scoping a Postgres → Oracle move who need a
-  defensible first-pass DDL plus a written list of what won't translate.
-- **M&A diligence teams** with 48 hours to tell a partner what a target's
-  Postgres schema is going to cost on Oracle Exadata / ADB.
-- **Architects** running a "what would this look like on Oracle?" spike
-  without standing up SQL Developer Migration Workbench, ZDM, or GoldenGate.
+- Migration leads and DBAs scoping a Postgres → Oracle move
+- M&A and technical due-diligence teams sizing a target's Postgres footprint against Oracle Database, Exadata, or Autonomous Database
+- Solution architects and pre-sales engineers producing first-pass landing-zone DDL
+- Oracle partners and SI practices standardizing intake before SQL Developer Migration Workbench, ZDM, or GoldenGate engagements
+- Platform and FinOps teams estimating license and edition impact (SE2 vs EE, options, features in use) from schema evidence
 
-If you want a one-click, lossless, app-aware migration — use Oracle's own
-tools. This is the boring CLI you run *first* to know what you're walking into.
+For full, app-aware migration, use Oracle's own tooling. `pg2oracle` is the
+deterministic first pass that produces the artifact everyone agrees on before
+that work begins.
 
 ---
 
