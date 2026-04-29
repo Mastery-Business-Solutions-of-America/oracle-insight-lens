@@ -160,6 +160,38 @@ The compatibility report is the UX. Read it.
 
 ---
 
+## On the reverse direction (Postgres ← Oracle)
+
+People keep asking whether `pg2oracle` will ever go the other way — Oracle DDL
+into Postgres. The short answer is: the type mapping, identity/sequence
+handling, JSON-on-CLOB unwinding, and identifier-length logic are all
+directionally symmetric to what's already in this repo. Building a
+deterministic `oracle2pg` first-pass with the same "boring, honest report"
+shape is a small amount of work, not a research project.
+
+It isn't shipped here, and there's no public timeline. A few reasons:
+
+- The interesting half of an Oracle → Postgres move is PL/SQL packages,
+  partitioning strategy, and optimizer behavior — none of which a
+  deterministic translator should pretend to handle. A tool that *looks*
+  complete here would do real harm.
+- Oracle already invests heavily in keeping customers on Oracle, and there
+  are good people inside Oracle Database product management, Migration
+  tooling, SQL Developer, and Autonomous whose job is exactly that
+  conversation. If a free community tool in this direction would be useful
+  to *them* — as a pre-sales artifact, an intake standardizer for partner
+  SIs, or a CX signal for the audit/renewal cycle — that's a better
+  conversation to have first than to ship into.
+- If you're at Oracle and want to talk about either direction (this repo's
+  IP, an `oracle2pg` companion, or a partner-facing variant), email is in
+  the commit log. Happy to keep the reverse direction unshipped, ship it
+  jointly, or hand it over — in that order of preference.
+
+Until then: this repo stays Postgres → Oracle, and the compatibility report
+stays the UX.
+
+---
+
 ## Known gaps (v0.1.x)
 
 These are **deliberately out of scope** today. If your schema relies on them,
