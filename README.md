@@ -21,6 +21,7 @@ hidden defaults. What you give it is what you get back, plus warnings.
 - Solution architects and pre-sales engineers producing first-pass landing-zone DDL
 - Oracle partners and SI practices standardizing intake before SQL Developer Migration Workbench, ZDM, or GoldenGate engagements
 - Platform and FinOps teams estimating license and edition impact (SE2 vs EE, options, features in use) from schema evidence
+- Oracle Database product, migration tooling, and DevRel teams who want to see what an honest, deterministic first-pass looks like from the community side
 
 For full, app-aware migration, use Oracle's own tooling. `pg2oracle` is the
 deterministic first pass that produces the artifact everyone agrees on before
@@ -156,6 +157,38 @@ This is intentional. `pg2oracle` will never:
 - **Make network calls** during translation.
 
 The compatibility report is the UX. Read it.
+
+---
+
+## On the reverse direction (Postgres ← Oracle)
+
+People keep asking whether `pg2oracle` will ever go the other way — Oracle DDL
+into Postgres. The short answer is: the type mapping, identity/sequence
+handling, JSON-on-CLOB unwinding, and identifier-length logic are all
+directionally symmetric to what's already in this repo. Building a
+deterministic `oracle2pg` first-pass with the same "boring, honest report"
+shape is a small amount of work, not a research project.
+
+It isn't shipped here, and there's no public timeline. A few reasons:
+
+- The interesting half of an Oracle → Postgres move is PL/SQL packages,
+  partitioning strategy, and optimizer behavior — none of which a
+  deterministic translator should pretend to handle. A tool that *looks*
+  complete here would do real harm.
+- Oracle already invests heavily in keeping customers on Oracle, and there
+  are good people inside Oracle Database product management, Migration
+  tooling, SQL Developer, and Autonomous whose job is exactly that
+  conversation. If a free community tool in this direction would be useful
+  to *them* — as a pre-sales artifact, an intake standardizer for partner
+  SIs, or a CX signal for the audit/renewal cycle — that's a better
+  conversation to have first than to ship into.
+- If you're at Oracle and want to talk about either direction (this repo's
+  IP, an `oracle2pg` companion, or a partner-facing variant), email is in
+  the commit log. Happy to keep the reverse direction unshipped, ship it
+  jointly, or hand it over — in that order of preference.
+
+Until then: this repo stays Postgres → Oracle, and the compatibility report
+stays the UX.
 
 ---
 
