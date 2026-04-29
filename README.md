@@ -21,6 +21,7 @@ hidden defaults. What you give it is what you get back, plus warnings.
 - Solution architects and pre-sales engineers producing first-pass landing-zone DDL
 - Oracle partners and SI practices standardizing intake before SQL Developer Migration Workbench, ZDM, or GoldenGate engagements
 - Platform and FinOps teams estimating license and edition impact (SE2 vs EE, options, features in use) from schema evidence
+- Oracle Database product, migration tooling, and DevRel teams who want to see what an honest, deterministic first-pass looks like from the community side
 
 For full, app-aware migration, use Oracle's own tooling. `pg2oracle` is the
 deterministic first pass that produces the artifact everyone agrees on before
