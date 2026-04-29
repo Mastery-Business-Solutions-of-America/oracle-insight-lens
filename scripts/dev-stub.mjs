@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// pg2oracle is a Node CLI, not a web app. The Lovable preview platform expects a
-// dev server on a port — this stub satisfies the healthcheck and serves a
-// simple HTML page explaining what the project actually is.
+// pg2oracle is a Node CLI, not a web app. Some preview/hosting environments
+// expect a dev server on a port — this stub satisfies the healthcheck and
+// serves a simple HTML page explaining what the project actually is.
 import { createServer } from "node:http";
 
-// Accept --port N (Lovable passes this) or fall back to PORT env / 8080.
+// Accept --port N (passed by the host environment) or fall back to PORT env / 8080.
 const args = process.argv.slice(2);
 const portIdx = args.indexOf("--port");
 const port = Number(

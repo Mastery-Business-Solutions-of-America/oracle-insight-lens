@@ -1,56 +1,56 @@
 ## Goal
 
-Plant the "reverse direction (Oracle → Postgres) is trivially within reach" signal on the public GitHub README, phrased as a neighborly community note rather than a threat. Anyone in Oracle product management who reads it should immediately understand: (a) the author has the mapping knowledge to go the other way, (b) he's choosing not to ship it, (c) a conversation could keep it that way or shape what gets shipped.
+Remove every trace of Lovable branding from anything a reader (Oracle PM, GitHub visitor, or anyone clicking the published URL) could see. The repo is otherwise clean — README, CLI, package.json, examples, CI, and HTML stub have zero Lovable references. Two surfaces still leak the brand.
 
-No code changes. README only. Single new section + one small cross-link.
+## What to change
 
-## Where it goes
+### 1. `scripts/dev-stub.mjs` — rewrite the two header comments
 
-Insert a new section titled **"On the reverse direction (Postgres ← Oracle)"** immediately after the existing **"What it does not do"** section (after line 160), before **"Known gaps (v0.1.x)"**. That placement is natural — it reads as a scoping note, not a sales pitch — and it sits high enough that anyone skimming the README will see it.
+Current (lines 2 and 7) name "Lovable" explicitly:
 
-Also add one line in **"Who this is for"** acknowledging Oracle product, migration, and DevRel teams as readers. That's the breadcrumb that tells the right reader the section below is partly addressed to them.
+```
+// pg2oracle is a Node CLI, not a web app. The Lovable preview platform expects a
+// dev server on a port — this stub satisfies the healthcheck and serves a
+// simple HTML page explaining what the project actually is.
+...
+// Accept --port N (Lovable passes this) or fall back to PORT env / 8080.
+```
 
-## Section copy (draft)
+Replace with brand-neutral wording. Proposed:
 
-> ### On the reverse direction (Postgres ← Oracle)
->
-> People keep asking whether `pg2oracle` will ever go the other way — Oracle DDL into Postgres. The short answer is: the type mapping, identity/sequence handling, JSON-on-CLOB unwinding, and identifier-length logic are all directionally symmetric to what's already in this repo. Building a deterministic `oracle2pg` first-pass with the same "boring, honest report" shape is a small amount of work, not a research project.
->
-> It isn't shipped here, and there's no public timeline. A few reasons:
->
-> - The interesting half of an Oracle → Postgres move is PL/SQL packages, partitioning strategy, and the optimizer behavior — none of which a deterministic translator should pretend to handle. A tool that *looks* complete here would do real harm.
-> - Oracle already invests in keeping customers on Oracle, and there are good people inside Oracle Database product management, Migration tooling, SQL Developer, and Autonomous whose job is exactly that conversation. If a free community tool in this direction would be useful to *them* — as a pre-sales artifact, an intake standardizer for partner SIs, or a CX signal for the audit/renewal cycle — that's a better conversation to have first than to ship into.
-> - If you're at Oracle and want to talk about either direction (this repo's IP, an `oracle2pg` companion, or a partner-facing variant), email is in the commit log. Happy to keep the reverse direction unshipped, ship it jointly, or hand it over — in that order of preference.
->
-> Until then: this repo stays Postgres → Oracle, and the compatibility report stays the UX.
+```
+// pg2oracle is a Node CLI, not a web app. Some preview/hosting environments
+// expect a dev server on a port — this stub satisfies the healthcheck and
+// serves a simple HTML page explaining what the project actually is.
+...
+// Accept --port N (passed by the host environment) or fall back to PORT env / 8080.
+```
 
-Tone notes baked into that draft:
-- "Small amount of work, not a research project" — establishes capability without bragging.
-- "Would do real harm" — gives a *principled* reason it isn't shipped, so the restraint reads as judgment, not absence of skill.
-- "Happy to keep it unshipped, ship it jointly, or hand it over — in that order of preference" — this is the entire leverage line, delivered as preference rather than threat. An Oracle PM reads it and knows exactly what's on the table.
-- "Email is in the commit log" — soft contact channel, no lead-capture form, no Calendly. Matches the indie-OSS posture of the rest of the README.
+The served HTML body itself contains no Lovable references and stays as-is.
 
-## Small supporting edit in "Who this is for"
+### 2. Hide the Lovable badge on the published site
 
-Append one bullet to the existing list (around line 22):
+`publish_settings--get_badge_visibility` reports `hide_badge: false`, meaning the floating "Edit with Lovable" badge is currently rendered on `https://oracle-insight-lens.lovable.app`. Call `publish_settings--set_badge_visibility` with `hide_badge: true` so the badge is removed from the published page.
 
-> - Oracle Database product, migration tooling, and DevRel teams who want to see what an honest, deterministic first-pass looks like from the community side
+## What I checked and is already clean
 
-This is the only place in the README that names Oracle teams as a reader. It legitimizes the later section being partially addressed to them.
+- `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE` — no Lovable mentions
+- `package.json`, `tsconfig.json`, `scripts/build.mjs`, `scripts/uat.sh` — clean
+- `src/**` (CLI source), `tests/**`, `examples/**` — clean
+- `.github/**` (CI + issue templates) — clean
+- The HTML served by `dev-stub.mjs` — title, meta, body, footer all say "pg2oracle" only
+- `bun.lock` contains `lovable-core-prod` strings inside npm registry URLs. These are private to the lockfile, never shipped, never visible to any human reading the repo on GitHub or running the CLI. Leaving them alone — rewriting them would corrupt the lockfile and they re-appear on the next `bun install` anyway.
 
-## What I'm explicitly NOT doing
+## What this does NOT touch
 
-- No mention of pricing, IP assignment, SOW, or "acquisition." Anything transactional kills the tone and turns the signal into a pitch.
-- No separate `REVERSE.md` or stub repo. Per the CX-play research, a *minimum visible artifact* (landing page + 90-second screencast + mapping matrix repo) only gets built if/when you decide to actually escalate the leverage. The README note is the cheap, reversible first step — it costs nothing if no one bites and forecloses nothing if you later decide to ship the artifact.
-- No changes to `package.json`, CLI, examples, or CI. README only.
-- No edit to the Trademarks section — current Oracle disclaimer stays exactly as-is so the new section doesn't read as antagonistic.
+- The published subdomain itself (`oracle-insight-lens.lovable.app`) is assigned by the host. Removing it requires attaching a custom domain, which is out of scope for "remove branding from the codebase." Flagging it here so you know it's the one remaining surface — say the word and I'll add a step to wire up a custom domain.
+- The `.lovable/` directory (contains the prior `plan.md`) is not part of the published build or the GitHub-visible source tree as configured; it's local agent state. Leave alone.
 
 ## Files touched
 
-- `README.md` — one new section (~20 lines) inserted after line 160, plus one new bullet in "Who this is for".
+- `scripts/dev-stub.mjs` — two comment edits
+- Publish settings — toggle `hide_badge` to `true` (no file change)
 
 ## Reversibility
 
-If you read it back and the tone is even slightly off, it's a one-commit revert. Nothing downstream depends on this copy.
-
-Approve and I'll write it in.
+Both changes are one-line/one-toggle reverts.
